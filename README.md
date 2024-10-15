@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="NOEMA.jpg" alt="ReadMe Banner" height="200"/>
+  <img src="NOEMA.jpg" alt="ReadMe Banner"/>
 </p>
 
 # Noema
