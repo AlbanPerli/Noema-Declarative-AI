@@ -93,8 +93,8 @@ ListOf can be built with simple generators or a custom `Step`.
 import Noema
 
 horizon = Horizon(
-  ListOf("task description","{var_name}", Word)  # Produce a list of Word stored in {var_name}
-  ListOf("task description","{var_name}", Int)   # Produce a list of int stored in {var_name}
+  ListOf(Word, "task description","{var_name}")  # Produce a list of Word stored in {var_name}
+  ListOf(Int, "task description","{var_name}")   # Produce a list of int stored in {var_name}
   ...
 )
 ```
