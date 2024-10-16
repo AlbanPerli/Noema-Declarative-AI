@@ -54,7 +54,7 @@ horizon = Horizon(
 ```python
 import Noema
 
-subject = horizon.constituteWith(subject)
+subject = horizon.constituteWith(subject) # The horizon is constituted by the LLM
 
 # Read the noema
 print(subject.noema)
