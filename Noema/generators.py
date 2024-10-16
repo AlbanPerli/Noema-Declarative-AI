@@ -124,7 +124,7 @@ class Bool(GenStep):
 
 class ListOf(GenStep):
     
-    def __init__(self, llm_input:str, to:str , elementType:GenStep, action=None):
+    def __init__(self, elementType:GenStep, llm_input:str, to:str, action=None):
         super().__init__(llm_input, to, output_type="List",action=action)
         self.elementType = elementType
         

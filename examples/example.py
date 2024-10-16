@@ -4,7 +4,7 @@ subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
 subject.add(Var("Time is the only problem", "{thougth}")) # store "Time is the only problem" in {thougth}
 
 subject = Horizon(
-    ListOf("What are the problems you are facing (in order of difficulty)?","{problems}",Sentence), # The model produce a list of sentence that is stored in {problems}
+    ListOf(Sentence, "What are the problems you are facing (in order of difficulty)?","{problems}"), # The model produce a list of sentence that is stored in {problems}
     ForEach("{problems}","{item}","{count}", [
         Sentence("Explain why '{item}' is the problem No {count}.","{item_explanation}"), # The sentence produced is stored in {item_explanation}
         Print("Pb Nb {count}: {item}. Explanation: {item_explanation}")
