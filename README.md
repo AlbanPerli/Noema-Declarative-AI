@@ -31,7 +31,7 @@ pip install git+https://github.com/AlbanPerli/Noema-Declarative-AI
 ### Create the Subject
 
 ```python
-import Noema
+from Noema import *
 
 subject = Subject("model.gguf") # Full Compatibiliy with LLamaCPP.
 
@@ -41,7 +41,7 @@ subject.add(Var("Time is the only problem", "{thougth}")) # store "Time is the o
 ### Create an horizon
 
 ```python
-import Noema
+from Noema import *
 
 horizon = Horizon(
   Sentence("You explain why {thougth}","{thougth_explanation}"), # The sentence produced is stored in {thougth_explanation}
@@ -52,7 +52,7 @@ horizon = Horizon(
 ### Constitution
 
 ```python
-import Noema
+from Noema import *
 
 subject = horizon.constituteWith(subject) # The horizon is constituted by the LLM
 
@@ -74,7 +74,7 @@ print(subject.data["explanation_note"] * 2) # The value of 'explanation_note' is
 ### Simple generators
 
 ```python
-import Noema
+from Noema import *
 
 horizon = Horizon(
   Sentence("task description","{var_name}") # Produce a sentence stored in {var_name}
@@ -90,7 +90,7 @@ horizon = Horizon(
 ListOf can be built with simple generators or a custom `Step`.
 
 ```python
-import Noema
+from Noema import *
 
 horizon = Horizon(
   ListOf(Word, "task description","{var_name}")  # Produce a list of Word stored in {var_name}
@@ -102,7 +102,7 @@ horizon = Horizon(
 ### Selector
 
 ```python
-import Noema
+from Noema import *
 
 subject = Horizon(
   Select("Are local LLMs the future?", ["Yes of course","Never!"], "{best_local_llm}"), # The model can only choose on option.
@@ -114,7 +114,7 @@ subject = Horizon(
 #### IF/ELSE
 
 ```python
-import Noema
+from Noema import *
 
 subject = Horizon(
     Sentence("Explain why '{thougth}'.","{thougth_explanation}"), 
@@ -137,7 +137,7 @@ print(subject.data["points_explanation"]) # "The explanation is not clear enough
 
 # ForEach
 ```python
-import Noema
+from Noema import *
 
 subject = Horizon(
     ListOf(Sentence, "What are the problems you are facing (in order of difficulty)?","{problems}"), # The model produce a list of sentence that is stored in {problems}
