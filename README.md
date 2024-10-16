@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="NOEMA.jpg" alt="ReadMe Banner"/>
+  <img src="logoNoema.png" alt="ReadMe Banner"/>
 </p>
 
 **Noema is an application of the *declarative* programming paradigm to a langage model.** With Noema, you can control the model and choose the path it will follow. This framework wants to enable developpers to use LLM as an interpretor, not as a source of truth. Noema is built on llamacpp and guidance's shoulders.
