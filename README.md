@@ -2,7 +2,7 @@
   <img src="logoNoema.png" alt="ReadMe Banner"/>
 </p>
 
-**Noema is an application of the *declarative* programming paradigm to a langage model.** With Noema, you can control the model and choose the path it will follow. This framework wants to enable developpers to use LLM as an interpretor, not as a source of truth. Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidance](https://github.com/guidance-ai/guidance)'s shoulders.
+**Noema is an application of the *declarative* programming paradigm to a langage model.** With Noema, you can control the model and choose the path it will follow. This framework aims to enable developpers to use LLM as an interpretor, not as a source of truth. Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidance](https://github.com/guidance-ai/guidance)'s shoulders.
 
 - [Concept](#Concept)
 - [Installation](#installation)
