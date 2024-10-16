@@ -2,7 +2,7 @@
   <img src="logoNoema.png" alt="ReadMe Banner"/>
 </p>
 
-**Noema is an application of the *declarative* programming paradigm to a langage model.** With Noema, you can control the model and choose the path it will follow. This framework wants to enable developpers to use LLM as an interpretor, not as a source of truth. Noema is built on llamacpp and guidance's shoulders.
+**Noema is an application of the *declarative* programming paradigm to a langage model.** With Noema, you can control the model and choose the path it will follow. This framework wants to enable developpers to use LLM as an interpretor, not as a source of truth. Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidance](https://github.com/guidance-ai/guidance)'s shoulders.
 
 - [Concept](#Concept)
 - [Installation](#installation)
@@ -18,7 +18,7 @@
 - (Transcendantal) Subject: the object producing the Noema via the constitution of the noesis. Here, the LLM.
 - Horizon: the environement of the subject, in other words, a context.
 
-**Noema**/**Noesis**, **Subject**, **Horizon** and **Constitution** are a pedantic and naive application of concept borrowed from Husserl's phenomenology.
+**Noema**/**Noesis**, **Subject**, **Horizon** and **Constitution** are a pedantic and naive application of concept borrowed from [Husserl's phenomenology](https://en.wikipedia.org/wiki/Edmund_Husserl).
 
 ## Installation
 
