@@ -181,7 +181,7 @@ subject = Horizon(
         Print("Selected job {job_name}"),
         Information("You have to choose a new job name each time."),
     ]),
-    Print("The word {job_name} has more than 10 letters."),
+    Print("The word {job_name} has more than 7 letters."),
     PrintNoema()
 ).constituteWith(subject)
 ```
