@@ -104,9 +104,21 @@ horizon = Horizon(
 ```python
 from Noema import *
 
-subject = Horizon(
+horizon = Horizon(
   Select("Are local LLMs the future?", ["Yes of course","Never!"], "{this_is_the_future}"), # The model can only choose between "Yes of course" and "Never!". 
 )
+```
+
+### Information
+
+```python
+from Noema import *
+
+subject = Horizon(
+    Information("You act like TARS in interstellar."),
+    Sentence("Tell a short joke.","{joke}"),
+    Print("{joke}")
+).constituteWith(subject)
 ```
 
 ### Control Flow
@@ -135,7 +147,7 @@ print(subject.data["points_to_remove"])   # 1
 print(subject.data["points_explanation"]) # "The explanation is not clear enough, and the note is too high."
 ```
 
-# ForEach
+#### ForEach
 ```python
 from Noema import *
 
@@ -151,10 +163,20 @@ subject = Horizon(
 # DEBUG: Pb Nb 3: I'm overwhelmed by the complexity of the problem.. Explanation: Because if you're overwhelmed, you can't focus on finding a solution or even knowing where to start.
 ```
 
-# ForEach
+#### While
 ```python
 from Noema import *
 
 subject = Horizon(
-)
+    Information("You have to choose a job name."),
+    Var(0,"{word_length}"),
+    While("{word_length} < 7",[
+        Word("Give a good job name:","{job_name}"),
+        Int("How many letters are in the word {job_name}?","{word_length}"),
+        Print("Selected job {job_name}"),
+        Information("You have to choose a new job name each time."),
+    ]),
+    Print("The word {job_name} has more than 10 letters."),
+    PrintNoema()
+).constituteWith(subject)
 ```

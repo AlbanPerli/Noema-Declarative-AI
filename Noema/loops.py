@@ -137,7 +137,56 @@ class While(Step):
         if isinstance(self.condition, str):
             return self.condition
         elif isinstance(self.condition, Step):
-            return f"Condition Step: {self.condition.name}"
+            return "Repeat:"#f"Condition Step: {self.condition.name}"
+        else:
+            return "Unknown Condition"
+
+    def list_steps(self,state):
+        for step in self.steps:
+            if isinstance(step, Var):
+                step.execute(state,False)
+                
+        step_names = ["Repeat the following instructions:"] #[f"{self.name} (Condition: {self.condition_description})"]
+        for step in self.steps:
+            step_names.extend(['  ' + sub_step for sub_step in step.list_steps(state)])
+        return step_names
+
+    def execute(self, state):
+        out_condition = True
+        while out_condition:
+            for step in self.steps:
+                step.execute(state)
+            out_condition = self.evaluate_condition(state)
+
+    def evaluate_condition(self, state):
+        print("EVALUATING CONDITION")
+        if isinstance(self.condition, str):
+            current_condition = self.extract_variables_from_string(self.condition, state)
+            try:
+                return eval(current_condition, {})
+            except Exception as e:
+                print(f"Error evaluating condition: {e}")
+                return False
+        elif isinstance(self.condition, Step):
+            res = self.condition.execute(state)
+            print(f"Condition result: {res}")
+            return bool(res)
+        else:
+            raise ValueError("Condition must be either a string or a Step.")
+
+# TODO: Find a better way...
+class WhileNot(Step):
+    def __init__(self, condition, steps):
+        super().__init__("While")
+        self.condition = condition
+        self.steps = steps
+        self.condition_description = self._describe_condition()
+
+    def _describe_condition(self):
+        if isinstance(self.condition, str):
+            return self.condition
+        elif isinstance(self.condition, Step):
+            return "Repeat:" #f"Condition Step: {self.condition.name}"
         else:
             return "Unknown Condition"
 
@@ -152,11 +201,14 @@ class While(Step):
         return step_names
 
     def execute(self, state):
-        while self.evaluate_condition(state):
+        out_condition = False
+        while not out_condition:
             for step in self.steps:
                 step.execute(state)
+            out_condition = self.evaluate_condition(state)
 
     def evaluate_condition(self, state):
+        print("EVALUATING CONDITION")
         if isinstance(self.condition, str):
             current_condition = self.extract_variables_from_string(self.condition, state)
             try:
@@ -165,6 +217,8 @@ class While(Step):
                 print(f"Error evaluating condition: {e}")
                 return False
         elif isinstance(self.condition, Step):
-            return bool(self.condition.execute(state))
+            res = self.condition.execute(state)
+            print(f"Condition result: {res}")
+            return bool(res)
         else:
             raise ValueError("Condition must be either a string or a Step.")

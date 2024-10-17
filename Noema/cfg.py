@@ -42,7 +42,7 @@ class G():
 
     @guidance(stateless=True)
     def bool(lm):
-        return lm + select(['oui', 'non'])
+        return lm + select(['yes', 'no'])
 
     @guidance(stateless=True)
     def word(lm):

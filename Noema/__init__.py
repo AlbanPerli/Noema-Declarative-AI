@@ -5,7 +5,7 @@ from .conditionnal import IF
 from .returnStep import Return
 from .subject import Subject
 from .noesis import Noesis, Constitute, Return
-from .text import Text
+from .information import Information
 from .write import Write, Clear, Add
 from .execFunction import CallFunction, WriteToFile
 from .reflexion import Reflexion

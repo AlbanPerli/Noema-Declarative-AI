@@ -18,7 +18,7 @@ class Select(GenStep):
             self.options = options
         else:
             raise ValueError("The parameter must be a string (state key), a list or a Step.")
-        self.display_type = "Tu réponds en sélectionnant l'option la plus pertinente."
+        self.display_type = "You respond by selecting the correct option."
                 
     def execute(self, state):
         super().execute(state)    
@@ -45,7 +45,7 @@ class Word(GenStep):
     
     def __init__(self, llm_input:str, to:str , action=None):
         super().__init__(llm_input, to, output_type="Single Word",action=action)
-        self.display_type = "Tu réponds avec un mot."
+        self.display_type = "You respond with a single word."
         
     def execute(self, state):
         super().execute(state)    
@@ -60,11 +60,11 @@ class Sentence(GenStep):
     
     def __init__(self, llm_input:str, to:str , action=None):
         super().__init__(llm_input, to, output_type="Sentence",action=action)
-        self.display_type = "Tu réponds avec une phrase."
+        self.display_type = "You respond with a sentence."
 
     def execute(self, state):
         super().execute(state) 
-        llm = state.llm       
+        llm = state.llm
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.sentence(), name="res") + ".\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"
@@ -75,7 +75,7 @@ class Int(GenStep):
     
     def __init__(self, llm_input:str, to:str , action=None):
         super().__init__(llm_input, to, output_type="Int",action=action)
-        self.display_type = "Tu réponds avec un nombre."
+        self.display_type = "You respond with a number."
 
     def execute(self, state):
         super().execute(state)    
@@ -90,7 +90,7 @@ class Float(GenStep):
     
     def __init__(self, llm_input:str, to:str , action=None):
         super().__init__(llm_input, to, output_type="Float",action=action)
-        self.display_type = "Tu réponds avec un nombre à virgule."
+        self.display_type = "You respond with a float number."
 
     def execute(self, state):
         super().execute(state)  
@@ -105,7 +105,7 @@ class Bool(GenStep):
     
     def __init__(self, llm_input:str, to:str , action=None):
         super().__init__(llm_input, to, output_type="Bool",action=action)
-        self.display_type = "Tu réponds par oui ou par non."
+        self.display_type = "You respond with a boolean."
 
     def execute(self, state):
         super().execute(state)   
@@ -113,7 +113,7 @@ class Bool(GenStep):
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.bool(), name="res") + "\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"
-        if res == "oui":
+        if res == "yes":
             res = True
         else:
             res = False
