@@ -7,7 +7,6 @@
 - [Concept](#Concept)
 - [Installation](#installation)
 - [Features](#features)
-- [Examples](#examples)
 
 
 ## Concept
@@ -236,8 +235,3 @@ subject = Horizon(
     Print("The word '{palindrome}' has {word_length} letters."),
 ).constituteWith(subject)
 ```
-
-
-## Examples: 
-
-Incomming...
