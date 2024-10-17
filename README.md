@@ -7,8 +7,8 @@
 - [Concept](#Concept)
 - [Installation](#installation)
 - [Features](#features)
-- [Examples](#exemples)
-- [Licence](#licence)
+- [Examples](#examples)
+
 
 ## Concept
 
