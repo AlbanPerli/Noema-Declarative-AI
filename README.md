@@ -159,8 +159,8 @@ from Noema import *
 subject = Horizon(
     ListOf(Sentence, "What are the problems you are facing (in order of difficulty)?","{problems}"), # The model produce a list of sentence that is stored in {problems}
     ForEach("{problems}","{item}","{count}", [
-        Sentence("Explain why '{item}' is the problem No {count}.","{item_explanation}"), # The sentence produced is stored in {item_explanation}
-        Print("Pb Nb {count}: {item}. Explanation: {item_explanation}")
+        Sentence("Explain why '{item}' is the problem No {count}.","{item_explanation}"), 
+        Print("Pb Nb {count}: {item}. Explanation: {item_explanation}") # Print doesn't interfere with the Noema 
     ])
 ).constituteWith(subject)
 # DEBUG: Pb Nb 1: I can't find a solution to the problem.. Explanation: Because if you can't find a solution, you can't make progress.
