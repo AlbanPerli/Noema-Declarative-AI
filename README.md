@@ -12,11 +12,11 @@
 
 ## Concept
 
-- Noesis: can be seen as the description of a function
-- Noema: is the representation (step by step) of this description
-- Constitution: is the process of transformation Noesis->Noema.
-- (Transcendantal) Subject: the object producing the Noema via the constitution of the noesis. Here, the LLM.
-- Horizon: the environement of the subject, in other words, a context.
+- **Noesis**: can be seen as the description of a function
+- **Noema**: is the representation (step by step) of this description
+- **Constitution**: is the process of transformation Noesis->Noema.
+- **(Transcendantal) Subject**: the object producing the Noema via the constitution of the noesis. Here, the LLM.
+- **Horizon**: the environement of the subject, in other words, a context.
 
 **Noema**/**Noesis**, **Subject**, **Horizon** and **Constitution** are a pedantic and naive application of concept borrowed from [Husserl's phenomenology](https://en.wikipedia.org/wiki/Edmund_Husserl).
 
@@ -173,7 +173,7 @@ subject = Horizon(
 from Noema import *
 
 subject = Horizon(
-    Information("You have to choose a job name."),
+    Information("You have to choose a job name in the field of computer science."),
     Var(0,"{word_length}"),
     While("{word_length} < 7",[
         Word("Give a good job name:","{job_name}"),
@@ -181,7 +181,7 @@ subject = Horizon(
         Print("Selected job {job_name}"),
         Information("You have to choose a new job name each time."),
     ]),
-    Print("The word {job_name} has more than 7 letters."),
+    Print("The word {job_name} has more than 10 letters."),
     PrintNoema()
 ).constituteWith(subject)
 ```
@@ -191,14 +191,28 @@ subject = Horizon(
 
 The Noesis is the descriptive process of a thought.
 You can think about it as a set of rules aiming to attain a goal.
-In a function we think about steps, here you have to think about how to think about steps.
+In a function we think about steps, here you have to *declare how to think* about the steps.
+
+A Noesis need a description, here: "Find a job name in a field." and can take optionnal parameters. 
+The `Return` is optional.
 
 ```python
 from Noema import *
 
+find_job_name = Noesis("Find a job name in a field.",["field_name","max_length"],[
+    Information("You have to choose a job name in the field of {field_name}."),
+    Var(0,"{word_length}"),
+    While("{word_length} < {max_length}",[
+        Word("Give a good job name:","{job_name}"),
+        Int("How many letters are in the word {job_name}?","{word_length}"),
+        Print("Selected job {job_name}"),
+        Information("You have to choose a new job name each time."),
+    ]),
+    Return("{job_name} is a good job name in the field of {field_name}.") #Return value
+])
+
 subject = Horizon(
-    Information("You act like TARS in interstellar."),
-    Sentence("Tell a short joke.","{joke}"),
-    Print("{joke}")
+    Var(Constitute(find_job_name,("IT","10")),"{job_name}"), # Call the noesis "find_job_name" with the arguments "IT" and 10 and store the result in {job_name}
+    Print("{job_name} has more than 10 letters."),
 ).constituteWith(subject)
 ```

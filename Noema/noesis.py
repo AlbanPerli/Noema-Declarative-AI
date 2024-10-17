@@ -35,12 +35,10 @@ class Noesis(Step):
         param_str = '\n'.join(param_list)
         nStep = self.list_steps(state)
         noesisSteps = "\n".join(nStep[1:])
-        noesis = f"""[INST]Tu fonctionnes dans une boucle de pensée. Voici ton raisonnement étape par étape:
-But général: {nStep[0]}
-PLAN DE RAISONNEMENT:
+        noesis = f"""<s>[INST]You are functioning in a loop of thought. Here is your reasoning step by step:
 {noesisSteps}
 [/INST]
-Voici le résultat du raisonnement:
+Here is the result of the reasoning:
 {param_str}
 """
         return noesis
@@ -86,7 +84,7 @@ Voici le résultat du raisonnement:
     # TODO: better way to prepare the noema
     def prepare_noema(self,noema:str):
         noema = noema.split("\n", 1)[1]
-        noema = noema.replace(f"[INST]Tu fonctionnes dans une boucle de pensée. Voici ton raisonnement étape par étape:\n", "")
+        noema = noema.replace(f"[INST]<s>[INST]You are functioning in a loop of thought. Here is your reasoning step by step:\n", "")
         noema = noema.replace("[/INST]", "")
         noema = noema.replace("<s>", "")
         # insérer une ligne au début de la noema
@@ -123,9 +121,9 @@ class Constitute(Step):
     def resolve_param(self, param, state):
         if isinstance(param, str):
             if not re.match(r'\{(\w+)\}', param):
-                raise ValueError(f"Datasource {param} must be a variable between curly braces.")
+                return param
             else:
-                unwrapped_param = re.findall(r'\{(\w+)\}', param)[0]
+                unwrapped_param = self.extract_variables_from_string(param, state)
                 return state.get(unwrapped_param)
         elif isinstance(param, Step):
             return param.execute(state)
@@ -135,7 +133,6 @@ class Constitute(Step):
     def execute(self, state, run_step = True):
         resolved_args = [self.resolve_param(arg, state) for arg in self.args]
         output = self.function.execute_with_params(state, resolved_args,self.name)
-        print(f"Save output {output} in '{self.name}'")
         state.llm += f"Result of '{self.name}' is: {output}"+ "\n"
         state.set(self.name, output)
         return output

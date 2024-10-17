@@ -3,19 +3,23 @@ from Noema import *
 subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
 subject.add(Var("Time is the only problem", "{thougth}")) # store "Time is the only problem" in {thougth}
 
-noesis = Noesis('Main goal'
-
-subject = Horizon(
-    Information("You have to choose a job name."),
+find_job_name = Noesis("Find a job name in a field.",["field_name","max_length"],[
+    Information("You have to choose a job name in the field of {field_name}."),
     Var(0,"{word_length}"),
-    While("{word_length} < 7",[
+    While("{word_length} < {max_length}",[
         Word("Give a good job name:","{job_name}"),
         Int("How many letters are in the word {job_name}?","{word_length}"),
         Print("Selected job {job_name}"),
         Information("You have to choose a new job name each time."),
     ]),
-    Print("The word {job_name} has more than 10 letters."),
+    Return("{job_name} is a good job name in the field of {field_name}.")
+])
+
+subject = Horizon(
+    Var(Constitute(find_job_name,("IT","10")),"{job_name}"), # Call the noesis "find_job_name" with the arguments "IT" and 10 and store the result in {job_name}
+    Print("{job_name} has more than 10 letters."),
     PrintNoema()
+    
 ).constituteWith(subject)
 
 # subject = Horizon(
