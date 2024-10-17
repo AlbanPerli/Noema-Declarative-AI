@@ -22,7 +22,7 @@
 ## Installation
 
 ```bash
-pip install git+https://github.com/AlbanPerli/Noema-Declarative-AI
+pip install Noema
 ```
 
 ## Features
