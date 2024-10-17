@@ -165,7 +165,6 @@ class While(Step):
                 print(f"Error evaluating condition: {e}")
                 return False
         elif isinstance(self.condition, Step):
-            # Si la condition est un Step, on l'exécute pour obtenir un résultat booléen
             return bool(self.condition.execute(state))
         else:
             raise ValueError("Condition must be either a string or a Step.")
