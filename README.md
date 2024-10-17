@@ -113,6 +113,9 @@ horizon = Horizon(
 
 ### Information
 
+Information are useful to insert some context to the current step of the noesis.
+Here we use a simple string, but we can also call a python function to do some RAG or other tasks.
+
 ```python
 from Noema import *
 
