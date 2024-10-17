@@ -73,7 +73,7 @@ print(subject.data["explanation_note"] * 2) # The value of 'explanation_note' is
 
 ### Simple generators
 
-Generators can be used to generate content from the subject through the noesis (here, the task description).
+Generators can be used to generate content from the subject (LLM) through the noesis (here, the task description).
 
 ```python
 from Noema import *
