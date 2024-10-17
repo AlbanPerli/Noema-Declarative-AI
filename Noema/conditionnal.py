@@ -1,6 +1,6 @@
 from .returnStep import Return
-from .step import *
-from .var import Var
+from .step import Step, FlowStep
+from .var import *
 from .subject import *
 
 class IF(FlowStep):

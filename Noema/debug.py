@@ -1,5 +1,5 @@
 import re
-from Logos.step import Step
+from .step import Step
 
 
 class Print(Step):
