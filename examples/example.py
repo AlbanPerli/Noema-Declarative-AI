@@ -3,6 +3,8 @@ from Noema import *
 subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
 subject.add(Var("Time is the only problem", "{thougth}")) # store "Time is the only problem" in {thougth}
 
+noesis = Noesis('Main goal'
+
 subject = Horizon(
     Information("You have to choose a job name."),
     Var(0,"{word_length}"),

@@ -73,6 +73,8 @@ print(subject.data["explanation_note"] * 2) # The value of 'explanation_note' is
 
 ### Simple generators
 
+Generators can be used to generate content from the subject through the noesis (here, the task description).
+
 ```python
 from Noema import *
 
@@ -178,5 +180,22 @@ subject = Horizon(
     ]),
     Print("The word {job_name} has more than 10 letters."),
     PrintNoema()
+).constituteWith(subject)
+```
+
+
+### NOESIS
+
+The Noesis is the descriptive process of a thought.
+You can think about it as a set of rules aiming to attain a goal.
+In a function we think about steps, here you have to think about how to think about steps.
+
+```python
+from Noema import *
+
+subject = Horizon(
+    Information("You act like TARS in interstellar."),
+    Sentence("Tell a short joke.","{joke}"),
+    Print("{joke}")
 ).constituteWith(subject)
 ```
