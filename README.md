@@ -241,7 +241,3 @@ subject = Horizon(
 ## Examples: 
 
 Incomming...
-
-
-## Licence: 
-Apache 2.0
