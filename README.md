@@ -216,3 +216,32 @@ subject = Horizon(
     Print("{job_name} has more than 10 letters."),
 ).constituteWith(subject)
 ```
+
+
+### Python Function Call
+
+In the Noesis we can call a python function. 
+The parameters can be value extracted from the context i.e. a `Var` using `{var_name}`.
+Return value of the python function called can be stored in a `Var`.
+
+```python
+from Noema import *
+
+def count_letters(word):
+    return len(word)
+
+subject = Horizon(
+    Var("TENET", "{palindrome}"), # store "TENET" in {palindrome}
+    Var(CallFunction(count_letters, "{palindrome}"), "{word_length}"), # store the result of the function count_letters in {word_length}
+    Print("The word '{palindrome}' has {word_length} letters."),
+).constituteWith(subject)
+```
+
+
+## Examples: 
+
+Incomming...
+
+
+## Licence: 
+Apache 2.0

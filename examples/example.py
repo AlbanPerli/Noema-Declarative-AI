@@ -3,23 +3,13 @@ from Noema import *
 subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
 subject.add(Var("Time is the only problem", "{thougth}")) # store "Time is the only problem" in {thougth}
 
-find_job_name = Noesis("Find a job name in a field.",["field_name","max_length"],[
-    Information("You have to choose a job name in the field of {field_name}."),
-    Var(0,"{word_length}"),
-    While("{word_length} < {max_length}",[
-        Word("Give a good job name:","{job_name}"),
-        Int("How many letters are in the word {job_name}?","{word_length}"),
-        Print("Selected job {job_name}"),
-        Information("You have to choose a new job name each time."),
-    ]),
-    Return("{job_name} is a good job name in the field of {field_name}.")
-])
+def count_letters(word):
+    return len(word)
 
 subject = Horizon(
-    Var(Constitute(find_job_name,("IT","10")),"{job_name}"), # Call the noesis "find_job_name" with the arguments "IT" and 10 and store the result in {job_name}
-    Print("{job_name} has more than 10 letters."),
-    PrintNoema()
-    
+    Var("TENET", "{palindrome}"), # store "TENET" in {palindrome}
+    Var(CallFunction(count_letters, "{palindrome}"), "{word_length}"), # store the result of the function count_letters in {word_length}
+    Print("The word '{palindrome}' has {word_length} letters."),
 ).constituteWith(subject)
 
 # subject = Horizon(
