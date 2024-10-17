@@ -105,7 +105,7 @@ horizon = Horizon(
 from Noema import *
 
 subject = Horizon(
-  Select("Are local LLMs the future?", ["Yes of course","Never!"], "{best_local_llm}"), # The model can only choose on option.
+  Select("Are local LLMs the future?", ["Yes of course","Never!"], "{this_is_the_future}"), # The model can only choose between "Yes of course" and "Never!". 
 )
 ```
 
@@ -123,7 +123,7 @@ subject = Horizon(
         Select("Do some auto-analysis, and choose a word to qualify your note", ["Fair","Over optimistic","Neutral"], "{auto_analysis}"),
     ],ELSE=[
        Select("Do some auto-analysis, and choose a word to qualify your note", ["Over optimistic","Neutral"], "{auto_analysis}"),
-       IF("'{auto_analysis}' == 'Over optimistic'", [
+       IF("'{auto_analysis}' == 'Over optimistic'", [  # Note the " ' " around {auto_analysis}
             Int("How many points do you think you should remove to be fair?","{points_to_remove}"),
             Sentence("Explain why you think you should remove {points_to_remove} points.","{points_explanation}"),
        ])
@@ -151,3 +151,10 @@ subject = Horizon(
 # DEBUG: Pb Nb 3: I'm overwhelmed by the complexity of the problem.. Explanation: Because if you're overwhelmed, you can't focus on finding a solution or even knowing where to start.
 ```
 
+# ForEach
+```python
+from Noema import *
+
+subject = Horizon(
+)
+```
