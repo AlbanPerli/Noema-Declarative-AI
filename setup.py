@@ -9,10 +9,12 @@ setup(
     author_email='your.email@example.com',
     url='https://github.com/yourusername/Noema',
     packages=find_packages(),
-    install_requires=[],
+    install_requires=[
+        'guidance',    
+    ],
     classifiers=[
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Apache 2.0 License',
         'Operating System :: OS Independent',
     ],
     python_requires='>=3.6',
