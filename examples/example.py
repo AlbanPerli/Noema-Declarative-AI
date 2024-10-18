@@ -7,26 +7,20 @@ def count_letters(word):
     return len(word)
 
 subject = Horizon(
-    Var("TENET", "{palindrome}"), # store "TENET" in {palindrome}
-    Var(CallFunction(count_letters, "{palindrome}"), "{word_length}"), # store the result of the function count_letters in {word_length}
-    Print("The word '{palindrome}' has {word_length} letters."),
+    Sentence("Explain why '{thougth}'.","{thougth_explanation}"), # The sentence produced is stored in {thougth_explanation}
+    Int("Give a note between 0 and 10 to qualify the quality of your explanation.","{explanation_note}"), # The model produce an python integer that is stored in {explanation_note}
+
+    IF("{explanation_note} < 5", [
+        Select("Do some auto-analysis, and choose a word to qualify your note", ["Fair","Over optimistic","Neutral"], "{auto_analysis}"),
+    ],ELSE=[
+       Select("Do some auto-analysis, and choose a word to qualify your note", ["Over optimistic","Neutral"], "{auto_analysis}"),
+       IF("'{auto_analysis}' == 'Over optimistic'", [
+            Int("How many points do you think you should remove to be fair?","{points_to_remove}"),
+            Sentence("Explain why you think you should remove {points_to_remove} points.","{points_explanation}"),
+       ])
+    ])
 ).constituteWith(subject)
 
-# subject = Horizon(
-#     Sentence("Explain why '{thougth}'.","{thougth_explanation}"), # The sentence produced is stored in {thougth_explanation}
-#     Int("Give a note between 0 and 10 to qualify the quality of your explanation.","{explanation_note}"), # The model produce an python integer that is stored in {explanation_note}
-
-#     IF("{explanation_note} < 5", [
-#         Select("Do some auto-analysis, and choose a word to qualify your note", ["Fair","Over optimistic","Neutral"], "{auto_analysis}"),
-#     ],ELSE=[
-#        Select("Do some auto-analysis, and choose a word to qualify your note", ["Over optimistic","Neutral"], "{auto_analysis}"),
-#        IF("'{auto_analysis}' == 'Over optimistic'", [
-#             Int("How many points do you think you should remove to be fair?","{points_to_remove}"),
-#             Sentence("Explain why you think you should remove {points_to_remove} points.","{points_explanation}"),
-#        ])
-#     ])
-# ).constituteWith(subject)
-
-# print(subject.data["auto_analysis"])
-# print(subject.data["points_to_remove"])
-# print(subject.data["points_explanation"])
+print(subject.data["auto_analysis"])
+print(subject.data["points_to_remove"])
+print(subject.data["points_explanation"])
