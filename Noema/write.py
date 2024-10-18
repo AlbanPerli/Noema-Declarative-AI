@@ -43,7 +43,7 @@ class Add(Step):
     
     def __init__(self, value, var_name:str, action=None):
         if not re.match(r'\{(\w+)\}', var_name) and not re.match(r'\{\{(\w+)\}\}', var_name):
-                raise ValueError(f"La source de donnée {var_name} doit être une variable entre accolades.")
+                raise ValueError(f"The datasource {var_name} must be a variable between curly braces.")
         unwrapped_var_name = re.findall(r'\{(\w+)\}', var_name)[0]
         super().__init__(name=unwrapped_var_name, action=action)
         self.value = value
