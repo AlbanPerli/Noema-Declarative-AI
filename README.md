@@ -78,11 +78,11 @@ Generators can be used to generate content from the subject (LLM) through the no
 from Noema import *
 
 horizon = Horizon(
-  Sentence("task description","{var_name}") # Produce a sentence stored in {var_name}
-  Word("task description","{var_name}")     # Produce a word stored in {var_name}
-  Int("task description","{var_name}")      # Produce an int stored in {var_name}
-  Float("task description","{var_name}")    # Produce a float stored in {var_name}
-  Bool("task description","{var_name}")     # Produce a bool stored in {var_name}
+  Sentence("task description","{var_name}"), # Produce a sentence stored in {var_name}
+  Word("task description","{var_name}"),     # Produce a word stored in {var_name}
+  Int("task description","{var_name}"),      # Produce an int stored in {var_name}
+  Float("task description","{var_name}"),    # Produce a float stored in {var_name}
+  Bool("task description","{var_name}"),     # Produce a bool stored in {var_name}
 )
 ```
 
@@ -94,8 +94,8 @@ ListOf can be built with simple generators or a custom `Step`.
 from Noema import *
 
 horizon = Horizon(
-  ListOf(Word, "task description","{var_name}")  # Produce a list of Word stored in {var_name}
-  ListOf(Int, "task description","{var_name}")   # Produce a list of int stored in {var_name}
+  ListOf(Word, "task description","{var_name}"),  # Produce a list of Word stored in {var_name}
+  ListOf(Int, "task description","{var_name}"),   # Produce a list of int stored in {var_name}
   ...
 )
 ```
