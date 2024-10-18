@@ -5,14 +5,10 @@ from .subject import *
 class Repeat(Step):
     def __init__(self, count, steps):
         super().__init__("Repeat")
-        """
-        :param count: Le nombre de répétitions, soit un entier, soit un Step qui génère un entier.
-        :param steps: La liste des étapes à exécuter pour chaque répétition.
-        """
-        self.count = count  # Peut être un entier, un Step ou une string
+        self.count = count  
         if isinstance(count,str):
             if not re.match(r'\{(\w+)\}', count):
-                raise ValueError(f"La source de donnée {count} doit être une variable entre accolades.")
+                raise ValueError(f"The datasource {count} must be a variable between curly braces.")
             unwrapped_count = re.findall(r'\{(\w+)\}', count)[0]
             self.count = unwrapped_count
         
@@ -25,19 +21,12 @@ class Repeat(Step):
         return step_names
 
     def get_count(self, state):
-        """
-        Récupère le nombre de répétitions, soit depuis un entier, soit depuis l'exécution d'un Step.
-        :param state: L'état courant.
-        :return: Le nombre de répétitions (entier).
-        """
-        # Si count est un entier
         if isinstance(self.count, int):
             return self.count
         
         elif isinstance(self.count,str):
             return state.get(self.count)
 
-        # Si count est un Step
         elif isinstance(self.count, Step):
             count = self.count.execute(state)
             if not isinstance(count, int):
@@ -56,7 +45,7 @@ class Repeat(Step):
 class ForEach(Step):
     def __init__(self, source, item_name, counter_name, steps):
         if not re.match(r'\{(\w+)\}', item_name):
-            raise ValueError(f"La source de donnée {item_name} doit être une variable entre accolades.")
+            raise ValueError(f"Datasource {item_name} must be a variable between curly braces.")
         unwrapped_item_name = re.findall(r'\{(\w+)\}', item_name)[0]
         
         if not re.match(r'\{(\w+)\}', counter_name):
@@ -70,7 +59,7 @@ class ForEach(Step):
                 raise ValueError(f"The datasource {source} must be a variable between curly braces.")
             self.source = re.findall(r'\{(\w+)\}', source)[0]
         else:
-            self.source = source  # Peut être une clé d'état ou un Step
+            self.source = source  
         self.item_name = unwrapped_item_name
         self.counter_name = unwrapped_counter_name
         self.steps = steps
@@ -95,16 +84,12 @@ class ForEach(Step):
         return step_names
 
     def execute(self, state):
-        # Récupérer la liste d'éléments à partir de la source (clé ou Step)
         items = self.get_items(state)
         
-        # Pour chaque élément de la liste, l'associer au nom donné (item_name) et exécuter les étapes
         for index, item in enumerate(items):
-            # Stocker l'élément courant temporairement dans l'état
             state.set(self.item_name, item)
             state.set(self.counter_name, index+1)
             
-            # Exécuter les étapes pour chaque élément
             for step in self.steps:
                 step.execute(state)
 
@@ -159,7 +144,6 @@ class While(Step):
             out_condition = self.evaluate_condition(state)
 
     def evaluate_condition(self, state):
-        print("EVALUATING CONDITION")
         if isinstance(self.condition, str):
             current_condition = self.extract_variables_from_string(self.condition, state)
             try:
@@ -208,7 +192,6 @@ class WhileNot(Step):
             out_condition = self.evaluate_condition(state)
 
     def evaluate_condition(self, state):
-        print("EVALUATING CONDITION")
         if isinstance(self.condition, str):
             current_condition = self.extract_variables_from_string(self.condition, state)
             try:
