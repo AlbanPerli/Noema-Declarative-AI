@@ -174,7 +174,7 @@ from Noema import *
 subject = Horizon(
     Information("You have to choose a job name in the field of computer science."),
     Var(0,"{word_length}"),
-    While("{word_length} < 7",[
+    While("{word_length} < 9",[
         Word("Give a good job name:","{job_name}"),
         Int("How many letters are in the word {job_name}?","{word_length}"),
         Print("Selected job {job_name}"),
