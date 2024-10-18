@@ -48,7 +48,6 @@ class Subject:
             if key not in self.data.keys():
                 self.data[key] = []
             if extend:
-                # si la valeur est une liste
                 if isinstance(self.data[key], list):
                     if isinstance(value, list):
                         tmp = self.data[key]
@@ -59,7 +58,6 @@ class Subject:
                         tmp.append(value)
                         self.data[key] = tmp
                 else:
-                    # si value est une liste
                     if isinstance(value, list):
                         tmp = [self.data[key]]
                         tmp.extend(value)

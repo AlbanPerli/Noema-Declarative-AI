@@ -87,7 +87,6 @@ Here is the result of the reasoning:
         noema = noema.replace(f"[INST]<s>[INST]You are functioning in a loop of thought. Here is your reasoning step by step:\n", "")
         noema = noema.replace("[/INST]", "")
         noema = noema.replace("<s>", "")
-        # insérer une ligne au début de la noema
         noema = f"Objectif: {self.name}\n{noema}"
         return noema
 
