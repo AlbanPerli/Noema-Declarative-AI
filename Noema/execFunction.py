@@ -3,27 +3,21 @@ from .step import Step
 
 class CallFunction(Step):
     
-    def __init__(self, function: callable, args: any, action=None):
-        super().__init__(name=function.__name__, action=action)
-        self.function = function
-        self.args = args if isinstance(args, tuple) else (args,)
-
-        
-    def resolve_param(self, param, state):
-        if isinstance(param, str):
-            if not re.match(r'\{(\w+)\}', param):
-                return param
-            else:
-                unwrapped_param = re.findall(r'\{(\w+)\}', param)[0]
-                return state.get(unwrapped_param)
-        elif isinstance(param, Step):
-            return param.execute(state)
-        else:
-            raise ValueError("The parameter must be a string (state key) or a Step.")
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        if not callable(value):
+            raise ValueError("The parameter must be a lambda function containing the Noesis to call.")
+        super().__init__(dest)
+        self.value = value
         
     def execute(self, state):
-        resolved_args = [self.resolve_param(arg, state) for arg in self.args]
-        return self.function(*resolved_args)
+        output = self.value()
+        state.set_prop(self.name, output)
+        return output
+
 
 class WriteToFile(CallFunction):
     

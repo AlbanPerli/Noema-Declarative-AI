@@ -1,4 +1,4 @@
-from .step import FlowStep, GenStep
+from .step import DebugStep, FlowStep, GenStep
 from .var import Var
 
 
@@ -9,6 +9,8 @@ class Horizon:
     def list_all_steps(self,state):
         step_names = []
         for step in self.steps:
+            if not isinstance(step, DebugStep) and not isinstance(step,FlowStep):
+                state.set_prop(step.name,None)
             step_names.extend(['  ' + sub_step for sub_step in step.list_steps(state)])
         return step_names
 
@@ -22,6 +24,7 @@ class Horizon:
     def buildNoesis(self,state):
         for step in self.steps:
             if isinstance(step, Var):
+                print("Var")
                 step.execute(state,False)
         noesisSteps = "\n".join(self.list_all_steps(state))
         noesis = f"""<s>[INST]You are functioning in a loop of thought. Here is your reasoning step by step:
@@ -30,7 +33,6 @@ class Horizon:
 Here is the result of the reasoning:
 """
         return noesis
-    
     
     def extract_noema(self,noema, noesis):
         noesis = noesis.replace("<s>","").replace("[/INST]","").replace("[INST]","")
@@ -41,17 +43,15 @@ Here is the result of the reasoning:
         noema = ""
         state.llm += noesis
         for step in self.steps:
-            if isinstance(step, FlowStep):
-                output = step.execute(state)
-                noema += step.name + "\n"
-                if output is not None:
-                    break
+            output = step.execute(state)
+            if isinstance(step, GenStep):
+                noema += step.display_step_name + str(output) + "\n"                
             else:
-                output = step.execute(state)
-                if isinstance(step, GenStep):
-                    noema += step.display_step_name + str(output) + "\n"
-                else:
-                    noema += step.name + "\n"
+                noema += step.name + "\n"
+                
+            if not isinstance(step, DebugStep) and not isinstance(step,FlowStep):
+                state.set_prop(step.name,output)
+                
         state.noema += self.extract_noema(noema,noesis)
         return state
 

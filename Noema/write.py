@@ -13,6 +13,7 @@ class Write(Step):
 
     def execute(self, state):
         current_value = self.extract_variables_from_string(self.value, state)
+        print(f"Writing {current_value} to {self.name}")
         state.set(self.name, current_value, self.extend)
         return current_value
     

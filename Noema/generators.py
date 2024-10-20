@@ -43,23 +43,30 @@ class Select(GenStep):
     
 class Word(GenStep):
     
-    def __init__(self, llm_input:str, to:str , action=None):
-        super().__init__(llm_input, to, output_type="Single Word",action=action)
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        super().__init__(value, dest, output_type="Single Word")
         self.display_type = "You respond with a single word."
         
     def execute(self, state):
         super().execute(state)    
         llm = state.llm    
-        llm += self.display_step_name + self.current_llm_input + " " + capture(G.word(), name="res") + "\n"
+        llm += self.display_step_name + self.current_llm_input + " The word is: " + capture(G.word(), name="res") + "\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"
-        state.set(self.name, res)
         return res
     
 class Sentence(GenStep):
     
-    def __init__(self, llm_input:str, to:str , action=None):
-        super().__init__(llm_input, to, output_type="Sentence",action=action)
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        super().__init__(value, dest, output_type="Sentence")
         self.display_type = "You respond with a sentence."
 
     def execute(self, state):
@@ -68,13 +75,16 @@ class Sentence(GenStep):
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.sentence(), name="res") + ".\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"
-        state.set(self.name, res)
         return res
     
 class Int(GenStep):
     
-    def __init__(self, llm_input:str, to:str , action=None):
-        super().__init__(llm_input, to, output_type="Int",action=action)
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        super().__init__(value, dest, output_type="Int")
         self.display_type = "You respond with a number."
 
     def execute(self, state):
@@ -83,13 +93,16 @@ class Int(GenStep):
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.num(), name="res") + "\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"
-        state.set(self.name, int(res))
-        return res
+        return int(res)
         
 class Float(GenStep):
     
-    def __init__(self, llm_input:str, to:str , action=None):
-        super().__init__(llm_input, to, output_type="Float",action=action)
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        super().__init__(value, dest, output_type="Float")
         self.display_type = "You respond with a float number."
 
     def execute(self, state):
@@ -98,13 +111,16 @@ class Float(GenStep):
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.float(), name="res") + "\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"
-        state.set(self.name, float(res))
-        return res
+        return float(res)
     
 class Bool(GenStep):
     
-    def __init__(self, llm_input:str, to:str , action=None):
-        super().__init__(llm_input, to, output_type="Bool",action=action)
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        super().__init__(value, dest, output_type="Bool")
         self.display_type = "You respond with a boolean."
 
     def execute(self, state):
@@ -117,15 +133,18 @@ class Bool(GenStep):
             res = True
         else:
             res = False
-        state.set(self.name, res)
         return res
     
     
 
 class ListOf(GenStep):
     
-    def __init__(self, elementType:GenStep, llm_input:str, to:str, action=None):
-        super().__init__(llm_input, to, output_type="List",action=action)
+    def __init__(self, elementType:GenStep, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        super().__init__(value, dest, output_type="List")
         self.elementType = elementType
         
     def execute(self, state):
@@ -148,5 +167,4 @@ class ListOf(GenStep):
         state.llm += self.display_step_name + res + "\n"
         res = res[1:-1].split(",")
         res = [el.strip()[1:-1] for el in res]
-        state.set(self.name, res)
         return res

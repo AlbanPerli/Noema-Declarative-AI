@@ -1,8 +1,10 @@
 import re
 import time
 
+from Noema.subject import Subject
+
 from .returnStep import Return
-from .step import GenStep, Step,FlowStep
+from .step import DebugStep, GenStep, Step,FlowStep
 
 class Noesis(Step):
     def __init__(self, name, param_names, steps, noema_name:str = "last_noema"):
@@ -43,13 +45,13 @@ Here is the result of the reasoning:
 """
         return noesis
 
-    def execute_with_params(self, state, param_values, noesis_name):
+    def execute_with_params(self, state, param_values):
         start_time = time.time()
-        state.enter_namespace(f"{self.name}_params")
         for i, param_name in enumerate(self.param_names):
             param_value = param_values[i]
-            state.set(param_name, param_value)
-
+            print(f"Setting {param_name} to {param_value}")
+            state.set_prop(param_name, param_value)
+        
         current_noesis = self.buildNoesis(self.param_names, param_values, state)
         noema = current_noesis
         tmp_copy = str(state.llm)
@@ -60,13 +62,17 @@ Here is the result of the reasoning:
             if isinstance(step, Return):
                 output = step.execute(state)
                 print("IN RETURN")
+                state.set_prop(self.name, output)
                 break
             elif isinstance(step, FlowStep):
                 output = step.execute(state)
                 if output is not None:
+                    state.set_prop(self.name, output)
                     break
             else:
                 output = step.execute(state)
+                if not isinstance(step, DebugStep) and not isinstance(step,FlowStep):
+                    state.set_prop(step.name,output)
                 if isinstance(step, GenStep):
                     noema += step.display_step_name + str(output) + "\n"
                 else:
@@ -76,9 +82,13 @@ Here is the result of the reasoning:
         end_time = time.time()
         duration = time.strftime("%M:%S", time.gmtime(end_time - start_time))
         print(f"Duration for '{self.name}' : {duration}s")
-        state.set(self.noema_name, self.prepare_noema(noema))
+        state.set_prop(self.noema_name, self.prepare_noema(noema))
         state.llm.reset()
         state.llm += tmp_copy
+        
+        for i, param_name in enumerate(self.param_names):
+            state.set_prop(param_name, None)
+        
         return output
 
     # TODO: better way to prepare the noema
@@ -97,6 +107,28 @@ Here is the result of the reasoning:
             return param.execute(state)
         else:
             raise ValueError("The parameter must be a string (state key) or a Step.")
+        
+    def __call__(self,*args, **kwargs):
+        # only one argument is allowed and it must be a type Subject
+        state = None
+        if len(args) > 1 or len(args) == 0:
+            raise ValueError("Noesis must have only one argument.")
+        if len(args) == 1:
+            state = args[0]
+        if not isinstance(state, Subject):
+            raise ValueError("The first argument of a Noesis must be a Subject.")
+
+        param_values = []
+        for key, value in kwargs.items():
+            if key not in self.param_names:
+                raise ValueError(f"Invalid parameter name: {key}")
+            print(f"IN CALL: param {key} with {value}")
+            param_values.append(value)
+        print(f"Param values: {param_values}")
+        return self.execute_with_params(state, param_values)
+        
+        
+
 
 class StepWrapper(Step):
     def __init__(self, name, func):
@@ -109,29 +141,27 @@ class StepWrapper(Step):
         
 class Constitute(Step):
     
-    def __init__(self, function: Noesis, args: any, action=None):
-        function_name = function.name
-        super().__init__(name=function_name, action=action)
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
         
-        self.function = function
-        self.args = args if isinstance(args, tuple) else (args,)
+        if not callable(value):
+            raise ValueError("The parameter must be a lambda function containing the Noesis to call.")
+        
+        super().__init__(dest)
+        self.value = value
 
-        
     def resolve_param(self, param, state):
-        if isinstance(param, str):
-            if not re.match(r'\{(\w+)\}', param):
-                return param
-            else:
-                unwrapped_param = self.extract_variables_from_string(param, state)
-                return state.get(unwrapped_param)
-        elif isinstance(param, Step):
-            return param.execute(state)
+        if callable(param):
+            return param()
         else:
-            raise ValueError("The parameter must be a string (state key) or a Step.")
+            raise ValueError("The parameter must be lambda function.")
         
     def execute(self, state, run_step = True):
-        resolved_args = [self.resolve_param(arg, state) for arg in self.args]
-        output = self.function.execute_with_params(state, resolved_args,self.name)
-        state.llm += f"Result of '{self.name}' is: {output}"+ "\n"
-        state.set(self.name, output)
+        output = self.value()
+        print(f"Result of '{self.name}' is: {output}")
+        state.llm += f"#{self.name.upper()}: {output}"+ "\n"
+        state.set_prop(self.name, output)
         return output

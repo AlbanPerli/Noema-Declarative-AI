@@ -14,6 +14,15 @@ class Subject:
     def add(self, var):
         var.execute(self)
 
+    def set_prop(self, name, value):
+        print(f"Setting prop: {name} to {value}")
+        setattr(self, name, value)
+
+    def get_prop(self, name):
+        value = getattr(self, name, None)
+        print(f"Getting prop: {name} with value {value}")
+        return value
+
     def set(self, key, value, extend = False):
         if self.namespace_stack:
             namespace = self.namespace_stack[-1]
@@ -21,14 +30,15 @@ class Subject:
                 self.data[namespace] = {}
             
             if key not in self.data[namespace].keys():
-                self.data[namespace][key] = []
+                self.data[namespace][key] = value
+                return
             
             if extend:
                 if isinstance(self.data[namespace][key], list):
                     if isinstance(value, list):
                         tmp = self.data[namespace][key]
                         tmp.extend(value)
-                        self.data[namespace][key] = tmp
+                        self.data[namespace][key] = [item for sublist in tmp for item in sublist]
                     else:
                         tmp = self.data[namespace][key]
                         tmp.append(value)
@@ -37,7 +47,7 @@ class Subject:
                     if isinstance(value, list):
                         tmp = [self.data[namespace][key]]
                         tmp.extend(value)
-                        self.data[namespace][key] = tmp
+                        self.data[namespace][key] = [item for sublist in tmp for item in sublist]
                     else:
                         tmp = [self.data[namespace][key]]
                         tmp.append(value)
@@ -46,13 +56,15 @@ class Subject:
                 self.data[namespace][key] = value
         else:
             if key not in self.data.keys():
-                self.data[key] = []
+                self.data[key] = value 
+                print("New array added")
+                return
             if extend:
                 if isinstance(self.data[key], list):
                     if isinstance(value, list):
                         tmp = self.data[key]
                         tmp.extend(value)
-                        self.data[key] = tmp
+                        self.data[key] = [item for sublist in tmp for item in sublist]
                     else:
                         tmp = self.data[key]
                         tmp.append(value)
@@ -61,7 +73,7 @@ class Subject:
                     if isinstance(value, list):
                         tmp = [self.data[key]]
                         tmp.extend(value)
-                        self.data[key] = tmp
+                        self.data[key] = [item for sublist in tmp for item in sublist]
                     else:
                         tmp = [self.data[key]]
                         tmp.append(value)

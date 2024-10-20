@@ -1,8 +1,8 @@
 import re
-from .step import Step
+from .step import DebugStep, Step
 
 
-class Print(Step):
+class Print(DebugStep):
     def __init__(self, value):
         super().__init__("Print")
         self.value = value
@@ -25,9 +25,9 @@ class Print(Step):
      
      
      
-class PrintNoema(Step):
+class PrintNoema(DebugStep):
     def __init__(self):
-        super().__init__("Print")
+        super().__init__("PrintNoema")
 
     def execute(self, state):
         BLUE = "\033[94m"

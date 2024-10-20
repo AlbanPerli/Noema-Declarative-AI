@@ -18,7 +18,7 @@ class IF(FlowStep):
         elif isinstance(self.condition, Step):
             return f"Condition Step: {self.condition.name}"
         else:
-            return "Unknown Condition"
+            return "Executable Condition"
 
     def list_steps(self,state):
         for step in self.steps_if_true:
@@ -39,11 +39,9 @@ class IF(FlowStep):
         return step_names
 
     def evaluate_condition(self, state):
-        if isinstance(self.condition, str):
-            current_condition = self.extract_variables_from_string(self.condition, state)
-            print(f"Current condition: {current_condition}")
+        if callable(self.condition):
             try:
-                return eval(current_condition, {})
+                return self.condition()
             except Exception as e:
                 print(f"Error evaluating condition: {e}")
                 return False
@@ -51,20 +49,31 @@ class IF(FlowStep):
             result = self.condition.execute(state)
             return bool(result)
         else:
-            raise ValueError("Condition must be a string or a Step instance")
+            raise ValueError("Condition must be a lambda function or a Step instance")
 
     def execute(self, state):
         outputs = []
+        prop_to_remove = []
         if self.evaluate_condition(state):
             for step in self.steps_if_true:
                 if isinstance(step, Return):
+                    for prop in prop_to_remove:
+                        state.set_prop(prop,None)
                     return step.execute(state)
                 else:
-                    step.execute(state)
+                    outputs.append(step.execute(state))
+                    state.set_prop(step.name,outputs[-1])
+                    prop_to_remove.append(step.name)
         else:
             for step in self.steps_if_false:
                 if isinstance(step, Return):
+                    for prop in prop_to_remove:
+                        state.set_prop(prop,None)
                     return step.execute(state)
                 else:
-                    step.execute(state)
+                    outputs.append(step.execute(state))
+                    state.set_prop(step.name,outputs[-1])
+                    prop_to_remove.append(step.name)
                     
+        for prop in prop_to_remove:
+            state.set_prop(prop,None)

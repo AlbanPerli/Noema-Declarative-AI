@@ -1,35 +1,36 @@
 import re
 from .step import Step
-from .noesis import Constitute
+from .noesis import Constitute, Noesis
 from .execFunction import CallFunction
 
 class Var(Step):
-    def __init__(self, value = [], name:str=None):
-        super().__init__(name)
+    def __init__(self, **kwargs):
+        if len(kwargs) != 1:
+            raise ValueError("Var must have only one argument.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        super().__init__(dest)
         self.value = value
-        self.dest = name
-        if not re.match(r'\{(\w+)\}', self.dest):
-            raise ValueError("The variable name must be in the form {varName}")
-        
+        self.dest = dest
+    
+    def to_function(self, value):
+        return lambda: value    
+    
     def execute(self, state, run_step = True):
-        unwrapped_var_name = self.dest
-        if re.match(r'\{(\w+)\}', self.dest):
-            unwrapped_var_name = re.findall(r'\{(\w+)\}', unwrapped_var_name)[0]
-            
+        value = self.value
         if isinstance(self.value, str):
-            var = self.extract_variables_from_string(self.value, state)
-            state.set(unwrapped_var_name, var)
-        elif isinstance(self.value, Step):
+            value = self.extract_variables_from_string(self.value, state, can_be_None=not run_step)
+        elif isinstance(self.value, Noesis):
+            value = self.value.execute(state)
+        elif callable(self.value):
             if run_step:
-                state.set(unwrapped_var_name, self.value.execute(state))
+                print(f"RUNNING FUNCTION {self.value.__name__}")
+                value = self.value()
+                print(f"RUNNING FUNCTION {self.value.__name__} WITH VALUE {value}")
             else:
-                state.set(unwrapped_var_name, self.value.name)
-        elif self.value is None:
-            return unwrapped_var_name
-        else:
-           state.set(unwrapped_var_name, self.value)
-           
-        return unwrapped_var_name
+                value = self.value
+                
+        return value
 
     def should_include_in_list(self):
         if isinstance(self.value, Constitute) or isinstance(self.value, CallFunction):
