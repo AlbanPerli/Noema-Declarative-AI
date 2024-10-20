@@ -32,31 +32,26 @@ pip install Noema
 ```python
 from Noema import *
 
-subject = Subject("model.gguf") # Full Compatibiliy with LLamaCPP.
+s = Subject("path_to_model.gguf") # Full Compatibiliy with LLamaCPP.
 
-subject.add(Var("Time is the only problem", "{thougth}")) # store "Time is the only problem" in {thougth}
+s.add(thougth = "Time is the only problem") # store "Time is the only problem" in thougth
 ```
 
-### Create an horizon
+### Create an horizon and its constitution
 
 ```python
 from Noema import *
 
-horizon = Horizon(
-  Sentence("You explain why {thougth}","{thougth_explanation}"), # The sentence produced is stored in {thougth_explanation}
-  Int("Give a note between 0 and 10 to qualify the quality of your explanation.","{explanation_note}"), # The model produce an python integer that is stored in {explanation_note}
-)
-```
+s = Subject("path_to_model.gguf") # Full Compatibiliy with LLamaCPP.
+s.add(thougth = "Time is the only problem") # store "Time is the only problem" in thougth
 
-### Constitution
-
-```python
-from Noema import *
-
-subject = horizon.constituteWith(subject) # The horizon is constituted by the LLM
+s= Horizon(
+  Sentence(thougth_explanation = "You explain why {thougth}"), # The sentence produced is stored in thougth_explanation
+  Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), # The model produce an python integer that is stored in explanation_note
+).constituteWith(s) # The horizon is constituted by the LLM
 
 # Read the noema
-print(subject.noema)
+print(s.noema)
 # You are functioning in a loop of thought. Here is your reasoning step by step:
 #   #THOUGTH_EXPLANATION: Explain why '{thougth}'.
 #   #EXPLANATION_NOTE: Give a note between 0 and 10 to qualify the quality of your explanation.
@@ -66,7 +61,7 @@ print(subject.noema)
 #  #EXPLANATION_NOTE: 10
 
 # Acces to each constitution separatly
-print(subject.data["explanation_note"] * 2) # The value of 'explanation_note' is an int.
+print(s.explanation_note * 2) # The value of 'explanation_note' is an int.
 # 20
 ```
 
@@ -78,11 +73,11 @@ Generators can be used to generate content from the subject (LLM) through the no
 from Noema import *
 
 horizon = Horizon(
-  Sentence("task description","{var_name}"), # Produce a sentence stored in {var_name}
-  Word("task description","{var_name}"),     # Produce a word stored in {var_name}
-  Int("task description","{var_name}"),      # Produce an int stored in {var_name}
-  Float("task description","{var_name}"),    # Produce a float stored in {var_name}
-  Bool("task description","{var_name}"),     # Produce a bool stored in {var_name}
+  Sentence(var_name = "task description"), # Produce a sentence stored in var_name
+  Word(var_name = "task description"),     # Produce a word stored in var_name
+  Int(var_name = "task description"),      # Produce an int stored in var_name
+  Float(var_name = "task description"),    # Produce a float stored in var_name
+  Bool(var_name = "task description"),     # Produce a bool stored in var_name
 )
 ```
 
@@ -94,8 +89,8 @@ ListOf can be built with simple generators or a custom `Step`.
 from Noema import *
 
 horizon = Horizon(
-  ListOf(Word, "task description","{var_name}"),  # Produce a list of Word stored in {var_name}
-  ListOf(Int, "task description","{var_name}"),   # Produce a list of int stored in {var_name}
+  ListOf(Word, var_name = "task description",),  # Produce a list of Word stored in var_name
+  ListOf(Int, var_name = "task description",),   # Produce a list of int stored in var_name
   ...
 )
 ```
@@ -105,9 +100,11 @@ horizon = Horizon(
 ```python
 from Noema import *
 
-horizon = Horizon(
-  Select("Are local LLMs the future?", ["Yes of course","Never!"], "{this_is_the_future}"), # The model can only choose between "Yes of course" and "Never!". 
-)
+s = Subject("path_to_model.gguf")
+
+s= Horizon(
+  Select(this_is_the_future = "Are local LLMs the future?", options=["Yes of course","Never!"]), # The model can only choose between "Yes of course" and "Never!". 
+).constituteWith(s) # The horizon is constituted by the LLM
 ```
 
 ### Information
@@ -118,11 +115,13 @@ Here we use a simple string, but we can also call a python function to do some R
 ```python
 from Noema import *
 
-subject = Horizon(
+s = Subject("path_to_model.gguf")
+
+s= Horizon(
     Information("You act like TARS in interstellar."),
-    Sentence("Tell a short joke.","{joke}"),
+    Sentence(joke = "Tell a short joke."),
     Print("{joke}")
-).constituteWith(subject)
+).constituteWith(s)
 ```
 
 ### Control Flow
@@ -132,57 +131,70 @@ subject = Horizon(
 ```python
 from Noema import *
 
-subject = Horizon(
-    Sentence("Explain why '{thougth}'.","{thougth_explanation}"), 
-    Int("Give a note between 0 and 10 to qualify the quality of your explanation.","{explanation_note}"), 
-    IF("{explanation_note} < 5", [
-        Select("Do some auto-analysis, and choose a word to qualify your note", ["Fair","Over optimistic","Neutral"], "{auto_analysis}"),
-    ],ELSE=[
-       Select("Do some auto-analysis, and choose a word to qualify your note", ["Over optimistic","Neutral"], "{auto_analysis}"),
-       IF("'{auto_analysis}' == 'Over optimistic'", [  # Note the " ' " around {auto_analysis}
-            Int("How many points do you think you should remove to be fair?","{points_to_remove}"),
-            Sentence("Explain why you think you should remove {points_to_remove} points.","{points_explanation}"),
-       ])
-    ])
-).constituteWith(subject)
+s = Subject("path_to_model.gguf")
+s.add(thougth = "Time is the only problem") # store "Time is the only problem" in thougth
 
-print(subject.data["auto_analysis"])      # "Over optimistic"
-print(subject.data["points_to_remove"])   # 1
-print(subject.data["points_explanation"]) # "The explanation is not clear enough, and the note is too high."
+s = Horizon(
+    Var(final_thought=None), # Create a variable final_thought
+    Sentence(thougth_explanation = "Explain why '{thougth}'."), 
+    Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), 
+    Select(auto_analysis="Do some auto-analysis, and choose a word to qualify your note", options=["Fair","Over optimistic","Neutral"]),
+    IF(lambda: s.explanation_note < 5, [
+        Information("The explanation is not clear enough, and the note is too low."),
+        Int(points_to_add = "How many points do you think you should add to be fair?"),
+        Sentence(points_explanation = "Explain why you think you should add {points_to_add} points."),
+        Var(final_thought = "The explanation is not clear enough, and the note is too low. I should add {points_to_add} points."),
+    ],ELSE=[
+       IF(lambda: s.auto_analysis == 'Over optimistic', [  
+            Int(points_to_remove ="How many points do you think you should remove to be fair?"),
+            Sentence(points_explanation = "Explain why you think you should remove {points_to_remove} points."),
+            Var(final_thought = "The explanation is not clear enough, and the note is too low. I should remove {points_to_remove} points."),
+       ],ELSE=[
+            Print("The explanation is clear enough, and the note is fair."),   
+            Var(final_thought = "The note is fair."),
+        ]),
+    ])
+).constituteWith(s) # The horizon is constituted by the LLM
+
+print(s.final_thought) # Print the final thought
+# The explanation is not clear enough, and the note is too low. I should add 5 points.
 ```
 
 #### ForEach
 ```python
 from Noema import *
 
-subject = Horizon(
-    ListOf(Sentence, "What are the problems you are facing (in order of difficulty)?","{problems}"), # The model produce a list of sentence that is stored in {problems}
-    ForEach("{problems}","{item}","{count}", [
-        Sentence("Explain why '{item}' is the problem No {count}.","{item_explanation}"), 
-        Print("Pb Nb {count}: {item}. Explanation: {item_explanation}") # Print doesn't interfere with the Noema 
+s = Subject("path_to_model.gguf")
+
+s = Horizon(
+    ListOf(Sentence, problems =  "What are the problems you are facing (in order of difficulty)?"), # The model produce a list of sentence that is stored in {problems}
+    ForEach(lambda: s.problems, [
+        Sentence(item_explanation = "Explain why '{item}' is the problem No {idx}."), 
+        Print("Pb Nb {idx}: {item}. Explanation: {item_explanation}") # Print doesn't interfere with the Noema 
     ])
-).constituteWith(subject)
-# DEBUG: Pb Nb 1: I can't find a solution to the problem.. Explanation: Because if you can't find a solution, you can't make progress.
-# DEBUG: Pb Nb 2: I don't know where to start.. Explanation: Because if you don't know where to start, you can't make any progress either.
-# DEBUG: Pb Nb 3: I'm overwhelmed by the complexity of the problem.. Explanation: Because if you're overwhelmed, you can't focus on finding a solution or even knowing where to start.
+).constituteWith(s) # The horizon is constituted by the LLM
+
+# Pb Nb 1: I don't know what to do next.. Explanation: Because if you don't know what to do next, you can't make progress and achieve your goals.
+# Pb Nb 2: I don't have enough information to make a decision.. Explanation: Because if you don't have enough information, you can't make an informed decision and may make a mistake that could set you back or cause problems down the line.
+# Pb Nb 3: I'm not sure if I'm on the right track.. Explanation: Because if you're not sure if you're on the right track, you may be wasting time and effort on a path that won't lead to your goals, and you may not realize it until it's too late to change course.
 ```
 
 #### While
 ```python
-from Noema import *
+s = Subject("path_to_model.gguf")
 
-subject = Horizon(
+s = Horizon(
     Information("You have to choose a job name in the field of computer science."),
-    Var(0,"{word_length}"),
-    While("{word_length} < 9",[
-        Word("Give a good job name:","{job_name}"),
-        Int("How many letters are in the word {job_name}?","{word_length}"),
+    Var(word_length = 0 ),
+    While(lambda: s.word_length < 9,[
+        Word(job_name = "Give a good job name:"),
+        Int(word_length = "How many letters are in the word {job_name}?"),
         Print("Selected job {job_name}"),
         Information("You have to choose a new job name each time."),
     ]),
     Print("The word {job_name} has more than 10 letters."),
     PrintNoema()
-).constituteWith(subject)
+).constituteWith(s)
 ```
 
 
@@ -198,22 +210,28 @@ The `Return` is optional.
 ```python
 from Noema import *
 
+s = Subject("path_to_model.gguf")
+
 find_job_name = Noesis("Find a job name in a field.",["field_name","max_length"],[
     Information("You have to choose a job name in the field of {field_name}."),
-    Var(0,"{word_length}"),
-    While("{word_length} < {max_length}",[
-        Word("Give a good job name:","{job_name}"),
-        Int("How many letters are in the word {job_name}?","{word_length}"),
+    Var(word_length = 0),
+    While(lambda: s.word_length < s.max_length, [
+        Word(job_name = "Give a good job name:"),
+        Int(word_length = "How many letters are in the word {job_name}?"),
         Print("Selected job {job_name}"),
         Information("You have to choose a new job name each time."),
     ]),
     Return("{job_name} is a good job name in the field of {field_name}.") #Return value
 ])
 
-subject = Horizon(
-    Var(Constitute(find_job_name,("IT","10")),"{job_name}"), # Call the noesis "find_job_name" with the arguments "IT" and 10 and store the result in {job_name}
+s = Horizon(
+    Constitute(job_name = lambda:find_job_name(s, field_name="IT",max_length=10)), 
     Print("{job_name} has more than 10 letters."),
-).constituteWith(subject)
+).constituteWith(s) # The horizon is constituted by the LLM
+
+# Selected job programmer
+# Duration for 'Find a job name in a field.' : 00:01s
+# programmer is a good job name in the field of IT. has more than 10 letters.
 ```
 
 
@@ -226,12 +244,14 @@ Return value of the python function called can be stored in a `Var`.
 ```python
 from Noema import *
 
+s = Subject("path_to_model.gguf")
+
 def count_letters(word):
     return len(word)
 
-subject = Horizon(
-    Var("TENET", "{palindrome}"), # store "TENET" in {palindrome}
-    Var(CallFunction(count_letters, "{palindrome}"), "{word_length}"), # store the result of the function count_letters in {word_length}
+s = Horizon(
+    Var(palindrome = "TENET"), # store "TENET" in {palindrome}
+    CallFunction(word_length = lambda: count_letters(s.palindrome)), # store the result of the function count_letters in {word_length}
     Print("The word '{palindrome}' has {word_length} letters."),
-).constituteWith(subject)
+).constituteWith(s)
 ```

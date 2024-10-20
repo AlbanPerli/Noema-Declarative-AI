@@ -6,18 +6,22 @@ from guidance import models, gen, select, capture
 
 class Select(GenStep):
     
-    def __init__(self, llm_input:str, options, to:str , action=None):
-        super().__init__(llm_input, to, output_type="Single Word",action=action)
-        if isinstance(options, str):
-            if not re.match(r'\{(\w+)\}', options):
-                raise ValueError(f"La source de donnée {options} doit être une variable entre accolades.")
-            self.options = re.findall(r'\{(\w+)\}', options)[0]
+    def __init__(self, **kwargs):
+        if len(kwargs) != 2:
+            raise ValueError("Var must have 2 arguments, datasource and options.")
+        dest = list(kwargs.keys())[0]
+        value = list(kwargs.values())[0]
+        options = list(kwargs.values())[1]
+        super().__init__(value, dest, output_type="Single Word")
+        
+        if callable(options):
+            self.options = options
         elif isinstance(options, list):
             self.options = options
         elif isinstance(options, Step):
             self.options = options
         else:
-            raise ValueError("The parameter must be a string (state key), a list or a Step.")
+            raise ValueError("The parameter must be a lambda function, a list or a Step.")
         self.display_type = "You respond by selecting the correct option."
                 
     def execute(self, state):
@@ -27,12 +31,11 @@ class Select(GenStep):
         llm += self.display_step_name + self.current_llm_input+ " " + select(current_options, name="response")
         res = llm["response"]
         state.llm += self.display_step_name + res + "\n" 
-        state.set(self.name, res)
         return res
     
     def resolve_param(self, param, state):
-        if isinstance(param, str):
-            return state.get(param)
+        if callable(param):
+            return param()
         elif isinstance(param, Step):
             return param.execute(state)
         elif isinstance(param, list):

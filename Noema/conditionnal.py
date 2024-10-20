@@ -74,6 +74,7 @@ class IF(FlowStep):
                     outputs.append(step.execute(state))
                     state.set_prop(step.name,outputs[-1])
                     prop_to_remove.append(step.name)
-                    
-        for prop in prop_to_remove:
-            state.set_prop(prop,None)
+          
+        # TODO: think about the variable scope. Should we remove the variables created in the IF block?          
+        # for prop in prop_to_remove:
+        #     state.set_prop(prop,None)

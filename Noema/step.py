@@ -21,7 +21,6 @@ class Step:
         def lookup_variable(match):
             var_name = match.group(1)
             value = state.get_prop(var_name)
-            print("Value: ", value)
             if value is not None:
                 return str(value)
             else:
@@ -35,7 +34,6 @@ class Step:
         if re.search(r'\{(\w+)\}', string):
             string = re.sub(r'(.*)\{(\w+)\}(.*)', r'\1\2\3', string)
         
-        print("String: ", string)
         return string
 
     def extract_variables_from_string(self, string, state, can_be_None = False):

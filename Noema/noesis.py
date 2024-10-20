@@ -49,7 +49,6 @@ Here is the result of the reasoning:
         start_time = time.time()
         for i, param_name in enumerate(self.param_names):
             param_value = param_values[i]
-            print(f"Setting {param_name} to {param_value}")
             state.set_prop(param_name, param_value)
         
         current_noesis = self.buildNoesis(self.param_names, param_values, state)
@@ -61,7 +60,6 @@ Here is the result of the reasoning:
         for step in self.steps:
             if isinstance(step, Return):
                 output = step.execute(state)
-                print("IN RETURN")
                 state.set_prop(self.name, output)
                 break
             elif isinstance(step, FlowStep):
@@ -122,9 +120,7 @@ Here is the result of the reasoning:
         for key, value in kwargs.items():
             if key not in self.param_names:
                 raise ValueError(f"Invalid parameter name: {key}")
-            print(f"IN CALL: param {key} with {value}")
             param_values.append(value)
-        print(f"Param values: {param_values}")
         return self.execute_with_params(state, param_values)
         
         
@@ -161,7 +157,6 @@ class Constitute(Step):
         
     def execute(self, state, run_step = True):
         output = self.value()
-        print(f"Result of '{self.name}' is: {output}")
         state.llm += f"#{self.name.upper()}: {output}"+ "\n"
         state.set_prop(self.name, output)
         return output

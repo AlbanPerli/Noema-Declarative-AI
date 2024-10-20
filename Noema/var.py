@@ -24,9 +24,7 @@ class Var(Step):
             value = self.value.execute(state)
         elif callable(self.value):
             if run_step:
-                print(f"RUNNING FUNCTION {self.value.__name__}")
                 value = self.value()
-                print(f"RUNNING FUNCTION {self.value.__name__} WITH VALUE {value}")
             else:
                 value = self.value
                 

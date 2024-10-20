@@ -11,16 +11,15 @@ class Subject:
         )
         self.noema = ""
         
-    def add(self, var):
-        var.execute(self)
+    def add(self,**kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def set_prop(self, name, value):
-        print(f"Setting prop: {name} to {value}")
         setattr(self, name, value)
 
     def get_prop(self, name):
         value = getattr(self, name, None)
-        print(f"Getting prop: {name} with value {value}")
         return value
 
     def set(self, key, value, extend = False):
@@ -57,7 +56,6 @@ class Subject:
         else:
             if key not in self.data.keys():
                 self.data[key] = value 
-                print("New array added")
                 return
             if extend:
                 if isinstance(self.data[key], list):

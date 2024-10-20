@@ -149,7 +149,6 @@ class While(Step):
                 return False
         elif isinstance(self.condition, Step):
             res = self.condition.execute(state)
-            print(f"Condition result: {res}")
             return bool(res)
         else:
             raise ValueError("Condition must be either a lambda function or a Step.")

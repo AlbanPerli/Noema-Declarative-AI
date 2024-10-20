@@ -1,4 +1,5 @@
 from .step import DebugStep, FlowStep, GenStep
+from .subject import Subject
 from .var import Var
 
 

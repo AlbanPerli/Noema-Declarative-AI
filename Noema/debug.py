@@ -10,10 +10,10 @@ class Print(DebugStep):
     def execute(self, state):
         if isinstance(self.value, str):
             extracted = self.extract_variables_from_string(self.value, state)
-            print("DEBUG:",extracted)
+            print(extracted)
         elif isinstance(self.value, Step):
             extracted = self.value.execute(state)
-            print("DEBUG:",extracted)
+            print(extracted)
         else:
             raise ValueError("The parameter must be a string (state key) or a Step.")
 
