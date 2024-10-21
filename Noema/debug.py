@@ -32,7 +32,22 @@ class PrintNoema(DebugStep):
     def execute(self, state):
         BLUE = "\033[94m"
         RESET = "\033[0m"
-        print(f"{BLUE}{state.llm}{RESET}")
+        print(f"{BLUE}{state.noema}{RESET}")
+        
+    def list_steps(self,state):
+        return []
+    
+    def should_include_in_list(self):
+         return False
+     
+class PrintNoesis(DebugStep):
+    def __init__(self):
+        super().__init__("PrintNoema")
+
+    def execute(self, state):
+        YELLOW = "\033[93m"
+        RESET = "\033[0m"
+        print(f"{YELLOW}{state.noesis}{RESET}")
         
     def list_steps(self,state):
         return []

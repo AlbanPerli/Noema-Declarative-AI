@@ -23,7 +23,9 @@ s = Horizon(
             Print("The explanation is clear enough, and the note is fair."),   
             Var(final_thought = "The note is fair."),
         ]),
-    ])
+    ]),
+    PrintNoesis(),
+    PrintNoema()
 ).constituteWith(s) # The horizon is constituted by the LLM
 
 print(s.final_thought) # Print the final thought

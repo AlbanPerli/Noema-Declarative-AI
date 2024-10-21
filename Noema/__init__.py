@@ -1,4 +1,4 @@
-from .step import Step, DebugStep, GenStep
+from .step import Step, DebugStep, GenStep, ReflexiveStep
 from .var import Var
 from .loops import Repeat, ForEach, While
 from .conditionnal import IF

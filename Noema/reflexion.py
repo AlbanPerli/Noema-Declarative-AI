@@ -1,7 +1,7 @@
 from .generators import *
-from .step import GenStep
+from .step import ReflexiveStep
 
-class Reflexion(GenStep):
+class Reflexion(ReflexiveStep):
     
     def __init__(self, **kwargs):
         if len(kwargs) != 1:
@@ -14,7 +14,9 @@ class Reflexion(GenStep):
         
     def execute(self, state):
         super().execute(state)
-
+        state.update_noesis(f"""{self.display_step_name} Apply reflexion loop on: '{self.current_llm_input}'""")
+        state.update_noema(f"""{self.display_step_name} Start reflexion loop on: '{self.current_llm_input}'""")
+        
         prompt = f"""[INST]For the following question: {self.current_llm_input}, follow these steps of reasoning, using a loop to determine whether the process should continue or if the reflection is complete:
 1. Initial Hypothesis: Provide a first answer or explanation based on your current knowledge.
 2. Critical Analysis: Evaluate the initial hypothesis. Look for contradictions, weaknesses, or areas of uncertainty.
@@ -26,13 +28,14 @@ class Reflexion(GenStep):
 Done.
 [/INST]
 
-"""     
+"""
         print(self.current_llm_input)
         tmp_copy = str(state.llm)
         lm = state.llm
-        finished_reflexion = False
         lm += prompt + "1. Initial Hypothesis: " + gen(name="reflexion",stop=["2. Critical Analysis:"]) 
+        state.update_noema("        ***Initial Hypothesis: " + lm["reflexion"].strip())
         lm += "2. Critical Analysis:" +gen(name="critic",stop=["3. Decision Point:"]) 
+        state.update_noema("        ***Critical Analysis: " + lm["critic"].strip())
         counter = 3
         loop_count = 0
         while True:
@@ -40,28 +43,34 @@ Done.
             counter += 1
             if lm["decision"] == "yes":
                 lm += f"{counter}. Final Conclusion: " + gen(name="response",stop=["Done.","\n"])
+                state.update_noema("        ***Final Conclusion: " + lm["response"].strip())
                 break
             else:
                 lm += f"{counter}. Conceptual Revision: " 
+                state.update_noema("        ***Conceptual Revision: " + lm["reflexion"].strip())
                 counter += 1
                 lm += gen(name="conceptual",stop=[f"{counter}. Extended Synthesis:"]) 
+                state.update_noema("        ***Extended Synthesis: " + lm["conceptual"].strip())
                 counter += 1
                 lm += f"{counter}. Extended Synthesis: " 
                 counter += 1
                 lm += gen(name="synthesis",stop=[f"{counter}. Loop or Conclusion:"]) 
+                state.update_noema("        ***Extended Synthesis: " + lm["synthesis"].strip())
                 lm += f"{counter}. Loop or Conclusion: " 
                 counter += 1
                 lm += capture(select(['satisfying', 'loop again']),name="finished")
+                state.update_noema("        ***Loop or Conclusion: " + lm["finished"].strip())
                 loop_count += 1
                 if loop_count >= 5:
                     lm += f"{counter}. Final Conclusion: " + gen(name="response",stop=["Done.","\n"])
+                    state.update_noema("        ***Final Conclusion: " + lm["response"].strip())
                     break
-
+        state.update_noema("Reflexion loop completed.")
         reflexion_value = lm["response"]
         state.set_prop(self.reflexion_var, reflexion_value)
         lm.reset()
-        state.llm += tmp_copy + f"\nReflexion: {reflexion_value}\n"
+        state.llm += tmp_copy + f"\n{self.display_step_name}: {reflexion_value}\n"
         return reflexion_value
     
     def list_steps(self,state):
-        return [self.name+" "+self.value] if self.should_include_in_list() else []
+        return [self.display_step_name+" "+self.value] if self.should_include_in_list() else []

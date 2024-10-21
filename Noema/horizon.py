@@ -1,4 +1,4 @@
-from .step import DebugStep, FlowStep, GenStep
+from .step import DebugStep, FlowStep, GenStep, ReflexiveStep
 from .subject import Subject
 from .var import Var
 
@@ -34,25 +34,26 @@ Here is the result of the reasoning:
 """
         return noesis
     
-    def extract_noema(self,noema, noesis):
-        noesis = noesis.replace("<s>","").replace("[/INST]","").replace("[INST]","")
-        return f"{noesis} {noema}"
+    def build_noema(self,noema_inst, noema_prod):
+        return f"""{noema_inst}
+Here is the result of the reasoning:
+{noema_prod}
+"""
     
     def constituteWith(self, state):
         noesis = self.buildNoesis(state)
-        noema = ""
+        
+
         state.llm += noesis
         for step in self.steps:
             output = step.execute(state)
-            if isinstance(step, GenStep):
-                noema += step.display_step_name + str(output) + "\n"                
-            else:
-                noema += step.name + "\n"
+            if isinstance(step, GenStep) and not isinstance(step, ReflexiveStep):
+                state.update_noesis(step.display_step_name + str(step.current_llm_input))
+                state.update_noema(step.display_step_name + str(output))
                 
             if not isinstance(step, DebugStep) and not isinstance(step,FlowStep):
                 state.set_prop(step.name,output)
                 
-        state.noema += self.extract_noema(noema,noesis)
         return state
 
 

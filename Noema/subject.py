@@ -9,7 +9,14 @@ class Subject:
             n_ctx=512*8,
             echo=False
         )
+        self.noesis = ""
         self.noema = ""
+        
+    def update_noema(self,value):
+        self.noema += value+'\n'
+        
+    def update_noesis(self,value):
+        self.noesis += value+'\n'
         
     def add(self,**kwargs):
         for key, value in kwargs.items():

@@ -91,6 +91,20 @@ class GenStep(Step):
     def should_include_in_list(self):
         return True 
     
+
+class ReflexiveStep(GenStep):
+    
+    def __init__(self, llm_input: str, step_name: str, output_type: str):
+        super().__init__(llm_input, step_name, output_type)
+        
+    def execute(self, state):
+        super().execute(state)
+
+    def list_steps(self, state):
+        return super().list_steps(state)
+    
+    def should_include_in_list(self):
+        return super().should_include_in_list()        
     
 class DebugStep(Step):
     def __init__(self, name):
