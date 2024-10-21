@@ -25,7 +25,6 @@ class Horizon:
     def buildNoesis(self,state):
         for step in self.steps:
             if isinstance(step, Var):
-                print("Var")
                 step.execute(state,False)
         noesisSteps = "\n".join(self.list_all_steps(state))
         noesis = f"""<s>[INST]You are functioning in a loop of thought. Here is your reasoning step by step:
