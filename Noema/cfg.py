@@ -71,7 +71,7 @@ class G():
         return lm + one_or_more(G.num())
 
     @guidance(stateless=True)
-    def crochet(lm):
+    def bracket(lm):
         return lm + select(['["', '"]'])
 
     @guidance(stateless=True)
@@ -84,7 +84,7 @@ class G():
 
     @guidance(stateless=True)
     def arrayOf(lm,elementType):
-        return lm + "[\"" + G.element(elementType) + G.crochet()
+        return lm + "[\"" + G.element(elementType) + G.bracket()
     
     @guidance(stateless=True)
     def elmSeparatedBy(lm,elementType,separator):
@@ -93,11 +93,3 @@ class G():
     @guidance(stateless=True)
     def elmBetween(lm, elementsTypeBetween, elementType):
         return lm + "'" + elementType + "'" + select(elementsTypeBetween) + "'" +  elementType + "'"
-    
-    @guidance(stateless=True)
-    def interdiction(lm,elementType):
-        return lm + "'" + elementType + "'" + "--x" + "'" +  elementType + "'"
-        
-    @guidance(stateless=True)
-    def relation(lm,elementType):
-        return lm + select([G.implication(elementType), G.interdiction(elementType)])    
