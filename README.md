@@ -34,7 +34,7 @@ from Noema import *
 
 s = Subject("path_to_model.gguf") # Full Compatibiliy with LLamaCPP.
 
-s.add(thougth = "Time is the only problem") # store "Time is the only problem" in thougth
+s.add(though = "Time is the only problem") # store "Time is the only problem" in though
 ```
 
 ### Create an horizon and its constitution
@@ -43,21 +43,21 @@ s.add(thougth = "Time is the only problem") # store "Time is the only problem" i
 from Noema import *
 
 s = Subject("path_to_model.gguf") # Full Compatibiliy with LLamaCPP.
-s.add(thougth = "Time is the only problem") # store "Time is the only problem" in thougth
+s.add(though = "Time is the only problem") # store "Time is the only problem" in though
 
 s= Horizon(
-  Sentence(thougth_explanation = "You explain why {thougth}"), # The sentence produced is stored in thougth_explanation
+  Sentence(though_explanation = "You explain why {though}"), # The sentence produced is stored in though_explanation
   Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), # The model produce an python integer that is stored in explanation_note
 ).constituteWith(s) # The horizon is constituted by the LLM
 
 # Read the noema
 print(s.noema)
-# You are functioning in a loop of thought. Here is your reasoning step by step:
-#   #THOUGTH_EXPLANATION: Explain why '{thougth}'.
+# You are functioning in a loop of though. Here is your reasoning step by step:
+#   #though_EXPLANATION: Explain why '{though}'.
 #   #EXPLANATION_NOTE: Give a note between 0 and 10 to qualify the quality of your explanation.
 
 # Here is the result of the reasoning:
-#  #THOUGTH_EXPLANATION: The reason is that time is the only thing that is constant and cannot be changed.
+#  #though_EXPLANATION: The reason is that time is the only thing that is constant and cannot be changed.
 #  #EXPLANATION_NOTE: 10
 
 # Acces to each constitution separatly
@@ -132,31 +132,31 @@ s= Horizon(
 from Noema import *
 
 s = Subject("path_to_model.gguf")
-s.add(thougth = "Time is the only problem") # store "Time is the only problem" in thougth
+s.add(though = "Time is the only problem") # store "Time is the only problem" in though
 
 s = Horizon(
-    Var(final_thought=None), # Create a variable final_thought
-    Sentence(thougth_explanation = "Explain why '{thougth}'."), 
+    Var(final_though=None), # Create a variable final_though
+    Sentence(though_explanation = "Explain why '{though}'."), 
     Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), 
     Select(auto_analysis="Do some auto-analysis, and choose a word to qualify your note", options=["Fair","Over optimistic","Neutral"]),
     IF(lambda: s.explanation_note < 5, [
         Information("The explanation is not clear enough, and the note is too low."),
         Int(points_to_add = "How many points do you think you should add to be fair?"),
         Sentence(points_explanation = "Explain why you think you should add {points_to_add} points."),
-        Var(final_thought = "The explanation is not clear enough, and the note is too low. I should add {points_to_add} points."),
+        Var(final_though = "The explanation is not clear enough, and the note is too low. I should add {points_to_add} points."),
     ],ELSE=[
        IF(lambda: s.auto_analysis == 'Over optimistic', [  
             Int(points_to_remove ="How many points do you think you should remove to be fair?"),
             Sentence(points_explanation = "Explain why you think you should remove {points_to_remove} points."),
-            Var(final_thought = "The explanation is not clear enough, and the note is too low. I should remove {points_to_remove} points."),
+            Var(final_though = "The explanation is not clear enough, and the note is too low. I should remove {points_to_remove} points."),
        ],ELSE=[
             Print("The explanation is clear enough, and the note is fair."),   
-            Var(final_thought = "The note is fair."),
+            Var(final_though = "The note is fair."),
         ]),
     ])
 ).constituteWith(s) # The horizon is constituted by the LLM
 
-print(s.final_thought) # Print the final thought
+print(s.final_though) # Print the final though
 # The explanation is not clear enough, and the note is too low. I should add 5 points.
 ```
 
@@ -200,7 +200,7 @@ s = Horizon(
 
 ### NOESIS
 
-The Noesis is the descriptive process of a thought.
+The Noesis is the descriptive process of a though.
 You can think about it as a set of rules aiming to attain a goal.
 In a function we think about steps, here you have to *declare how to think* about the steps.
 
