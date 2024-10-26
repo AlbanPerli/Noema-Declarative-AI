@@ -34,6 +34,15 @@ class ExecutableMemoryFragment(MemoryFragment):
             else:
                 raise TypeError(f"Expected {expected_type}, but received {type(arg)} with value {arg}")
 
+    def function_name(self):
+        return self.value.split('def ')[1].split('(')[0].strip()
+    
+    def parameters_names(self):
+        labels_and_types = self.value.split('def ')[1].split('(')[1].split(')')[0].split(',')
+        # extract the names of the parameters
+        names = [label.split(':')[0].strip() for label in labels_and_types]
+        return names
+
     def validate_function_signature(self, func, args):
         try:
             sig = inspect.signature(func)

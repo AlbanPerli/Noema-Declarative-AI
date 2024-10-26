@@ -9,9 +9,12 @@ s.add_capabilities("capabilities") # Load the capabilities from the module capab
 s = Horizon(
     Var(final_thought=None), # Create a variable final_thought
     Knowledge("How to build a house?"),
+    Int(sum_res = "Give a number between 0 and 5."),
     PrintNoema(),
     Reflexion(thougth_explanation = "Explain why '{though}'."),
     # Print("Auto-analysis: {auto_analysis}"),
+
+    
 
     Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), 
     Select(auto_analysis="Do some auto-analysis, and choose a word to qualify your note", options=["Fair","Over optimistic","Neutral"]),

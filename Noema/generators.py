@@ -93,6 +93,35 @@ class Int(GenStep):
     def execute(self, state):
         super().execute(state)    
         llm = state.llm
+        functions = state.memoir.retrieves(self.current_llm_input, subject='function')
+        if len(functions) > 0:
+            selected_func = functions[0]
+            func_name = selected_func.function_name()
+            parameter_names = selected_func.parameters_names()
+            print("Function name: ", func_name)
+            print("Parameter names: ", parameter_names)
+            lm = state.llm
+            lm += f"To do '{self.current_llm_input}', you need to execute the following function: \n" + selected_func.value + "\n"
+            lm += "Function call (with respect to the doc string): \n"
+            lm += "res = "+func_name + "("
+
+            parameters_values = []
+            for i in range(len(parameter_names)):
+                pName = parameter_names[i]
+                lm += pName + "="
+                stops = []
+                if i == len(parameter_names) - 1:
+                    stops = [")"]
+                else:
+                    stops = [parameter_names[i+1]+"=", ")"]
+                lm += gen(stop=stops,name="p"+str(i))
+                pValue = lm["p"+str(i)].strip()
+                if pValue[-1] == ",":
+                    pValue = pValue[:-1]
+                parameters_values.append(pName+"="+pValue)
+            print("Parameters values: ", parameters_values)
+            print("Call will be: ", func_name + "(" + ",".join(parameters_values) + ")")
+        
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.num(), name="res") + "\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"
