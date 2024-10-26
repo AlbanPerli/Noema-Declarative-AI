@@ -1,4 +1,6 @@
 from guidance import models
+from .memoir import Memoir
+
 class Subject:
     def __init__(self, llm_path):
         self.data = {}
@@ -11,6 +13,7 @@ class Subject:
         )
         self.noesis = ""
         self.noema = ""
+        self.memoir = Memoir()
         
     def update_noema(self,value):
         self.noema += value+'\n'
@@ -21,6 +24,9 @@ class Subject:
     def add(self,**kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
+            
+    def add_knowledge(self, knowledge):
+        self.memoir.add(knowledge, "knowledge")
 
     def set_prop(self, name, value):
         setattr(self, name, value)

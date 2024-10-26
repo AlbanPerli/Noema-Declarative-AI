@@ -2,13 +2,13 @@ from Noema import *
 
 s = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf") # Create a subject
 s.add(though = "Time is the only problem") # store "Time is the only problem" in thougth
-
-
+s.add_knowledge("If you have a problem, you can solve it by taking the time to think about it.")
 
 s = Horizon(
     Var(final_thought=None), # Create a variable final_thought
-    Print("Quality explanation: {quality_explanation}"),
-    Reflexion(thougth_explanation = "Explain why '{though}'."), 
+    Knowledge("How to build a house?"),
+    PrintNoema(),
+    Reflexion(thougth_explanation = "Explain why '{though}'."),
     # Print("Auto-analysis: {auto_analysis}"),
 
     Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), 

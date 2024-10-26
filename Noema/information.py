@@ -3,7 +3,7 @@ from .step import Step
 class Information(Step):
     
     def __init__(self, value:str):
-        super().__init__(name="Information: ")
+        super().__init__(name="Information")
         self.value = value
         
     def execute(self, state):
