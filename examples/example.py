@@ -3,6 +3,7 @@ from Noema import *
 s = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf") # Create a subject
 s.add(though = "Time is the only problem") # store "Time is the only problem" in thougth
 s.add_knowledge("If you have a problem, you can solve it by taking the time to think about it.")
+s.add_knowledge("Concerning date comparison, manipulation, formatting, etc... you have to use tools.")
 
 s = Horizon(
     Var(final_thought=None), # Create a variable final_thought
