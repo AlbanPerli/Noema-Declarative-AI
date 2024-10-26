@@ -13,3 +13,4 @@ from .debug import *
 from .cfg import *
 from .generators import *
 from .horizon import Horizon
+from .autoCritic import AutoCritic

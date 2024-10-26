@@ -73,7 +73,7 @@ class Sentence(GenStep):
         self.display_type = "You respond with a sentence."
 
     def execute(self, state):
-        super().execute(state) 
+        super().execute(state)
         llm = state.llm
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.sentence(), name="res") + ".\n"
         res = llm["res"]
@@ -92,7 +92,7 @@ class Int(GenStep):
 
     def execute(self, state):
         super().execute(state)    
-        llm = state.llm    
+        llm = state.llm
         llm += self.display_step_name + self.current_llm_input + " " + capture(G.num(), name="res") + "\n"
         res = llm["res"]
         state.llm += self.display_step_name + res + "\n"

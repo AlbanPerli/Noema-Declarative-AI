@@ -48,11 +48,11 @@ class G():
 
     @guidance(stateless=True)
     def num(lm):
-        return lm + one_or_more(select(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']))
+        return lm + one_or_more(select(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','-']))
 
     @guidance(stateless=True)
     def float(lm):
-        return lm + one_or_more(select(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','.']))
+        return lm + one_or_more(select(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','.','-']))
 
     @guidance(stateless=True)
     def bool(lm):

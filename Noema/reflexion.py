@@ -56,6 +56,7 @@ Done.
                 counter += 1
                 lm += gen(name="synthesis",stop=[f"{counter}. Loop or Conclusion:"]) 
                 state.update_noema("        ***Extended Synthesis: " + lm["synthesis"].strip())
+                counter += 1
                 lm += f"{counter}. Loop or Conclusion: " 
                 counter += 1
                 lm += capture(select(['satisfying', 'loop again']),name="finished")

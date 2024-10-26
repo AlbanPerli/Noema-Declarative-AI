@@ -1,7 +1,8 @@
 import re
 import time
 
-from Noema.subject import Subject
+from .autoCritic import AutoCritic
+from .subject import Subject
 
 from .returnStep import Return
 from .step import DebugStep, GenStep, Step,FlowStep
@@ -143,7 +144,7 @@ class Constitute(Step):
         dest = list(kwargs.keys())[0]
         value = list(kwargs.values())[0]
         
-        if not callable(value):
+        if not callable(value) and not isinstance(value, AutoCritic):
             raise ValueError("The parameter must be a lambda function containing the Noesis to call.")
         
         super().__init__(dest)
@@ -156,7 +157,11 @@ class Constitute(Step):
             raise ValueError("The parameter must be lambda function.")
         
     def execute(self, state, run_step = True):
-        output = self.value()
+        output = None
+        if isinstance(self.value, AutoCritic):
+            output = self.value.execute(state)
+        else:
+            output = self.value()
         state.llm += f"#{self.name.upper()}: {output}"+ "\n"
         state.set_prop(self.name, output)
         return output
