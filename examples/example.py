@@ -3,11 +3,14 @@ from Noema import *
 s = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf") # Create a subject
 s.add(though = "Time is the only problem") # store "Time is the only problem" in thougth
 
+
+
 s = Horizon(
     Var(final_thought=None), # Create a variable final_thought
+    Print("Quality explanation: {quality_explanation}"),
     Reflexion(thougth_explanation = "Explain why '{though}'."), 
-    Print("Auto-analysis: {auto_analysis}"),
-    Print("Thought explanation: {thougth_explanation}"),
+    # Print("Auto-analysis: {auto_analysis}"),
+
     Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), 
     Select(auto_analysis="Do some auto-analysis, and choose a word to qualify your note", options=["Fair","Over optimistic","Neutral"]),
     IF(lambda: s.explanation_note < 5, [

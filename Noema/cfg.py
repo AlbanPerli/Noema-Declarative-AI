@@ -1,4 +1,4 @@
-from guidance import guidance, select, one_or_more, zero_or_more, optional
+from guidance import guidance, select, one_or_more, zero_or_more, optional, Tool
 
 class G():
     
