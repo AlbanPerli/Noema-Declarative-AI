@@ -41,3 +41,15 @@ def sum(a: float, b: float) -> float:
     :return: The sum of the two floats
     """
     return a * b
+
+
+def remove_from_list(a: list, b: int) -> list:
+    """
+    Remove an element from a list.
+
+    :param a: The list
+    :param b: The index of the element to remove
+    :return: The list without the element
+    """
+    a.pop(b)
+    return a
