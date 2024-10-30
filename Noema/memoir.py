@@ -80,7 +80,6 @@ class Memoir:
         hash_value = self.create_hash(text)
 
         if self.document_exists(hash_value):
-            print(f"Document already exists with hash: {hash_value}")
             return "Document already exists"
 
         doc_id = self.create_id()

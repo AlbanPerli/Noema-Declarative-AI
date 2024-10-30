@@ -30,7 +30,6 @@ class Subject:
         
     def add_capabilities(self, module_name):
         self.memoir.load_functions_from_module(module_name)
-        
 
     def set_prop(self, name, value):
         setattr(self, name, value)
