@@ -1,5 +1,6 @@
 
 from guidance import models, gen, select, capture
+from Noema._AtomicTypes import Paragraph
 from Noema._Generator import Generator
 from Noema._ListGenerator import ListGenerator
 from Noema._patternBuilder import PatternBuilder
@@ -88,15 +89,18 @@ Reflexion output: Provide an output based on the final conclusion, should be for
             if atomic_type == "Bool":
                 python_type = bool
                 lm += f"Reflexion output: " + capture(G.arrayOf(G.bool()), name="formatted_response")
-            
+                
             res = lm["formatted_response"]
             state.llm += noesis_model.display_var() + res + "\n"
             res = res[1:-1].split(",")
             res = [python_type(el.strip()[1:-1]) for el in res]
             return res,noema, prompt
         else:
-            obj = PatternBuilder.instance().objects_by_type[noesis_model.type]()
-            lm += f"Reflexion output: " + capture(obj.grammar, name="formatted_response")
-            res = lm["formatted_response"]
-            state.llm += noesis_model.display_var()+ " " + res + "\n"
-            return obj.return_type(res),noema, prompt
+            if noesis_model.type == "Paragraph":
+                return lm["response"],noema, prompt
+            else:
+                obj = PatternBuilder.instance().objects_by_type[noesis_model.type]()
+                lm += f"Reflexion output: " + capture(obj.grammar, name="formatted_response")
+                res = lm["formatted_response"]
+                state.llm += noesis_model.display_var()+ " " + res + "\n"
+                return obj.return_type(res),noema, prompt

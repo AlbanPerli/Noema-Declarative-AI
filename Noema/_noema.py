@@ -12,15 +12,19 @@ class Noema:
         process = []
         
     def action_needed(self, model, state):
-        functions = state.memoir.retrieves(model.value, subject='function')
+        lm = state.llm
+        lm += f"\nExtract the main action from '{model.value}'\n"
+        lm += "Action: " + gen(stop=[".","\n"],name="action") + "\n"
+        print("Actions: ", lm["action"])
+        functions = state.memoir.retrieves(lm["action"], subject='function')
         if len(functions) > 0:
             selected_func = functions[0]
             func_name = selected_func.function_name()
             parameter_names = selected_func.parameters_names()
             print("Function name: ", func_name)
             print("Parameter names: ", parameter_names)
-            lm = state.llm
-            lm += f"To do '{self.current_llm_input}', you need to execute the following function: \n" + selected_func.value + "\n"
+            
+            lm += f"To do '{model.value}', you need to execute the following function: \n" + selected_func.value + "\n"
             lm += "Function call (with respect to the doc string): \n"
             lm += "res = "+func_name + "("
 
@@ -40,7 +44,9 @@ class Noema:
                 parameters_values.append(pName+"="+pValue)
             print("Parameters values: ", parameters_values)
             print("Call will be: ", func_name + "(" + ",".join(parameters_values) + ")")
-            return { "value": "FUNCTION RES", "noesis": model.value, "noema": model.value }
+            
+        state.llm += model.display_var() + "FUNCTION RES" + "\n"
+        return { "value": "FUNCTION RES", "noesis": model.value, "noema": model.value }
         
     def gen_list(self, model, subject):
         atomic_type = model.type.split("[")[1].split("]")[0]
@@ -68,12 +74,14 @@ class Noema:
         type = model.type
         res = None
         if "list" in type:
-            if model.annotation is Action:
+            if model.annotation == "Action":
+                print("Action needed")
                 return self.action_needed(model, subject)
             else:
                 return self.gen_list(model, subject)
         else:
-            if model.annotation is Action:
+            if model.annotation == "Action":
+                print("Action needed")
                 return self.action_needed(model, subject)
             else:
                 return self.gen_atomic(model, subject)

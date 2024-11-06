@@ -54,7 +54,6 @@ For the Assistant, special instruction begins with #TASK_NAME: followed by the i
         updated_model_by_line = {}
         updated_code_lines = ["def updated_description(self):"]
         for key in ref_model_by_line:
-            print(ref_model_by_line[key].variable)
             updated_code_lines.append(ref_model_by_line[key].variable+" = Generator()")
         instruction_nb = len(updated_code_lines)
         updated_code_lines.extend(ref_code_lines)

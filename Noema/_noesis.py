@@ -26,7 +26,6 @@ class Noesis:
         self.subject = subject
         infos = self.builder.build_noesis(self.description,sender=self)
         self.subject.llm += infos["noesis"]
-        print(infos["noesis"])
         self.ref_code_lines = infos["code_ref"]
         self.ref_model_by_line = infos["model_ref"]
         self.updated_code_lines = infos["code_updated"]

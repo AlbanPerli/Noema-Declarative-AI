@@ -1,6 +1,7 @@
 from importlib import *
 import importlib
 import os
+import re
 import types
 import chromadb
 from chromadb.config import Settings
@@ -116,7 +117,7 @@ class Memoir:
                 return MemoryFragment(first_doc, first_meta.get("subject"), first_meta)
         return None
     
-    def retrieves(self, text, subject=None, threshold=1.27, limit=3):
+    def retrieves(self, text, subject=None, threshold=1.6, limit=3):
         query_params = {
             "query_texts": [text],
             "include": ["metadatas", "distances", "documents"]
@@ -268,7 +269,11 @@ class Memoir:
 
             if isinstance(parsed_function, ast.FunctionDef):
                 func_name = parsed_function.name
-                docstring = func_name + "\n" + ast.get_docstring(parsed_function)
+                # get docstring without parameters
+                docstring = ast.get_docstring(parsed_function)
+                docstring = re.sub(r'\n\s+', '\n', docstring) if docstring else ""
+                
+                docstring = func_name + "\n" + docstring
                 exec(formatted_function_str) 
                 signature = inspect.signature(eval(func_name))
                 param_types = {param: self.normalize_type(signature.parameters[param].annotation) 
@@ -286,7 +291,6 @@ class Memoir:
                     "return_type": return_type, 
                     "timestamp": time.time()
                 }
-
                 self.add(docstring, subject="function", metadata=metadata)
                 return f"Function '{func_name}' added successfully."
             else:

@@ -17,11 +17,24 @@ class iOSArchitect(Noesis):
         """
         goal:Information = f"{self.value}"
         reflexion:Sentence = "Think about the architecture of the application." @Reflexion
-        view_list:list[Word] = "Give the name of the views and model of the application. Each name follow the iOS standard naming."  @Reflexion
-        model:Word = "Give the name of the model." 
+        view_list:list[Word] = "Give the name of the views and models of the application. Each name follow the iOS standard naming."  @Reflexion
+        model:list[Word] = "Give the name of the models." 
         file_names:list[Word] = "Give a file name (with extension) for each file."
-        for view in view_list.value:
-            ideas_list:list[Sentence] = "List ideas of new functionnalities for {view}."
+        generated_code = [] 
+        for file in file_names.value:
+            though_about_code:Paragraph = "Think about the code for the file {file}." @Reflexion
+            code_for_file:Swift = "Generate the SwiftUI code for the file {file}"
+            generated_code.append(code_for_file.value)
+        
+        full_code = " ".join(generated_code)
+        fixed_code:Swift = "Read the entire code: {full_code}, fix the issues and write the final version of the code."
+        user_input = None
+        while True:
+            user_input = input("Enter 'Done' when you are finished.")
+            if user_input == "Done":
+                break
+            else:
+                fixed_code:Swift = "Apply the following changes:{user_input}\nTo the code: {fixed_code.value}"
         # if how_many_view.value > 1:
         #     print("You will need a navigation controller.")
         # steps:Information = ["the interface","the network call", "the database"] 
@@ -37,9 +50,10 @@ class iOSArchitect(Noesis):
         #return code_by_step
 
 
-subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
+subject = Subject("../Models/Codestral-22B-v0.1-Q3_K_M.gguf")#Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
+subject.add_capabilities("capabilities")
 # Utilisation
-archi = iOSArchitect(name="Toto", value="You want to build an iOS application that displays a list of items. If you click on an item, you can see the details of the item.").go(subject)
+archi = iOSArchitect(name="Toto", value="Build an iOS application that displays a list of items. If you click on an item, you can see the details of the item. Items are generated locally only.").go(subject)
 print("\n\n")
 print(subject.llm)
 

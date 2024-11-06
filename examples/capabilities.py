@@ -1,4 +1,27 @@
 
+def write_to_file(file: str, content: str) -> None:
+    """
+    Write some content to a file.
+    Create the file if it does not exist.
+
+    :param file: The file to write to
+    :param content: The content to write
+    """
+    with open(file, "w") as f:
+        f.write(content)
+        
+        
+def read_file(file: str) -> str:
+    """
+    Read the content of a file.
+
+    :param file: The file to read
+    :return: The content of the file
+    """
+    with open(file, "r") as f:
+        return f.read()
+
+
 def multiply(a: int, b: int) -> int:
     """
     Multiply two integers together.

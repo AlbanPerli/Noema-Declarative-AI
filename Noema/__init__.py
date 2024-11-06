@@ -6,7 +6,7 @@ from ._pyExplorer import PyExplorer
 from ._patternBuilder import PatternBuilder
 from ._noema import Noema
 from ._Reflexion import Reflexion
-from .subject import Subject
+from ._Subject import Subject
 
 # from .step import Step, DebugStep, GenStep, ReflexiveStep
 # from .var import Var
