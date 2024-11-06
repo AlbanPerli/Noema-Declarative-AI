@@ -17,7 +17,9 @@ class iOSArchitect(Noesis):
         """
         goal:Information = f"{self.value}"
         reflexion:Sentence = "Think about the architecture of the application." @Reflexion
-        view_list:list[Word] = "Give the name of the views of the application. Each name follow the iOS standard naming."  @Reflexion
+        view_list:list[Word] = "Give the name of the views and model of the application. Each name follow the iOS standard naming."  @Reflexion
+        model:Word = "Give the name of the model." 
+        file_names:list[Word] = "Give a file name (with extension) for each file."
         for view in view_list.value:
             ideas_list:list[Sentence] = "List ideas of new functionnalities for {view}."
         # if how_many_view.value > 1:
