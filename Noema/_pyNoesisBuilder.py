@@ -54,6 +54,7 @@ For the Assistant, special instruction begins with #TASK_NAME: followed by the i
         updated_model_by_line = {}
         updated_code_lines = ["def updated_description(self):"]
         for key in ref_model_by_line:
+            print(ref_model_by_line[key].variable)
             updated_code_lines.append(ref_model_by_line[key].variable+" = Generator()")
         instruction_nb = len(updated_code_lines)
         updated_code_lines.extend(ref_code_lines)
@@ -82,7 +83,7 @@ For the Assistant, special instruction begins with #TASK_NAME: followed by the i
             else:
                 evaluated_value = value
 
-            results.append(NoesisModel(var_name,var_type,evaluated_value,annotation))
+        results.append(NoesisModel(var_name,var_type,evaluated_value,annotation))
 
         return results[0]
 

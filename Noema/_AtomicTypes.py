@@ -98,3 +98,6 @@ class Float(AtomicGenerator):
 
 class Reflexion:
     pass
+
+class Action:
+    pass

@@ -12,11 +12,12 @@ class iOSArchitect(Noesis):
     def description(self):
         """
         You are an iOS architect. You are responsible for architecture of the iOS application.
+        The application will be built with SwiftUI, respecting the good practices.
+        The class names will follow the iOS naming convention, the files names will be the same as the classname.
         """
         goal:Information = f"{self.value}"
-        reflexion:list[Sentence] = "Retreive all the steps composing the architecture of the application" @Reflexion
-        how_many_view:Int = "Think about how many views are needed by the application." @Reflexion
-        view_list:list[Word] = "List the name of the {how_many_view.value} views of the application."  @Reflexion
+        reflexion:Sentence = "Think about the architecture of the application." @Reflexion
+        view_list:list[Word] = "Give the name of the views of the application. Each name follow the iOS standard naming."  @Reflexion
         for view in view_list.value:
             ideas_list:list[Sentence] = "List ideas of new functionnalities for {view}."
         # if how_many_view.value > 1:

@@ -25,6 +25,7 @@ class Noesis:
     def go(self, subject):
         self.subject = subject
         infos = self.builder.build_noesis(self.description,sender=self)
+        self.subject.llm += infos["noesis"]
         print(infos["noesis"])
         self.ref_code_lines = infos["code_ref"]
         self.ref_model_by_line = infos["model_ref"]
@@ -47,12 +48,6 @@ class Noesis:
                         if isinstance(local_vars.get(model.variable), Generator):
                             model = self.updated_model_by_line[lineno]
                             original_value = model.original_value
-                            # find variable between { }
-                            # matches = re.finditer(r'\{(.*?)\}', original_value)
-                            # for match in matches:
-                            #     variable = match.group(1)
-                            #     if variable in local_vars:
-                            #         original_value = original_value.replace(match.group(0), str(local_vars[variable]))
                             original_value = original_value.format(**local_vars)        
                             model.value = str(original_value)
                             produced_value = self.produceValue(model)
