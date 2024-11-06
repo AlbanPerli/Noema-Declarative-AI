@@ -42,8 +42,6 @@ Here is the result of the reasoning:
     
     def constituteWith(self, state):
         noesis = self.buildNoesis(state)
-        
-
         state.llm += noesis
         for step in self.steps:
             output = step.execute(state)

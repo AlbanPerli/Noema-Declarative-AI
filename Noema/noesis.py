@@ -53,7 +53,7 @@ Here is the result of the reasoning:
             state.set_prop(param_name, param_value)
         
         current_noesis = self.buildNoesis(self.param_names, param_values, state)
-        noema = current_noesis
+        state.noema += current_noesis
         tmp_copy = str(state.llm)
         state.llm.reset()
         state.llm += "\n"+ current_noesis
@@ -61,6 +61,7 @@ Here is the result of the reasoning:
         for step in self.steps:
             if isinstance(step, Return):
                 output = step.execute(state)
+                state.noema += f"Return: {output}\n"
                 state.set_prop(self.name, output)
                 break
             elif isinstance(step, FlowStep):
@@ -73,15 +74,14 @@ Here is the result of the reasoning:
                 if not isinstance(step, DebugStep) and not isinstance(step,FlowStep):
                     state.set_prop(step.name,output)
                 if isinstance(step, GenStep):
-                    noema += step.display_step_name + str(output) + "\n"
+                    state.noema += step.display_step_name + str(output) + "\n"
                 else:
-                    noema += step.name + "\n"
+                    state.noema += step.name + "\n"
         state.exit_namespace()
-        
         end_time = time.time()
         duration = time.strftime("%M:%S", time.gmtime(end_time - start_time))
         print(f"Duration for '{self.name}' : {duration}s")
-        state.set_prop(self.noema_name, self.prepare_noema(noema))
+        state.set_prop(self.noema_name, self.prepare_noema(state.noema))
         state.llm.reset()
         state.llm += tmp_copy
         

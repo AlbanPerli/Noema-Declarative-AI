@@ -27,7 +27,7 @@ class Subject:
             
     def add_knowledge(self, knowledge):
         self.memoir.add(knowledge, "knowledge")
-        
+            
     def add_capabilities(self, module_name):
         self.memoir.load_functions_from_module(module_name)
 
