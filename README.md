@@ -96,13 +96,34 @@ class WebSearch(Noesis):
             return elaborate.value, manage_results.link
             
 subject = Subject("path/to/your/model.gguf")
-answer,source = WebSearch("What is the population of France?").constitute(subject)
+answer,source = WebSearch("What is the population of France?").constitute(subject, verbose=True)
 
 print(answer) 
 # The current population of France is 66,589,408 as of Sunday, November 24, 2024, based on Worldometer's elaboration of the latest United Nations data1.
 print(source)
 # 'https://www.worldometers.info/world-population/france-population/'
 ```
+
+<details>
+  <summary>Verbose output:</summary>
+task = <span style="color: yellow;">What is the population of France?</span> (<span style="color: SlateBlue;">INFORMATION</span>)
+
+current_date = <span style="color: yellow;">The current date is: 2024-11-26</span> (<span style="color: SlateBlue;">INFORMATION</span>)
+
+knowledge_reflexion = <span style="color: yellow;">I have to think about the task: 'What is the population of France?'.
+                        Based on the date and my knowledge, can I Know the answer? no.</span>
+                         (<span style="color: SlateBlue;">Thinking about the task.</span>)
+
+results = <span style="color: yellow;">The search results are: [{'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."}, {'title': 'Demographics of France', 'link': 'https://en.wikipedia.org/wiki/Demographics_of_France', 'description': 'As of 1 January 2021, 66,142,961 people lived in Metropolitan France, while 2,230,472 lived in overseas France, for a total of 68,373,433 inhabitants in the\xa0...'}, {'title': 'Total population in France 1982-2024 - Demographics', 'link': 'https://www.statista.com/statistics/459939/population-france/', 'description': '12 sept. 2024 — The total population of France has been increasing for years now, exceeding 68 million inhabitants in 2024. France is the second most populous\xa0...'}, {'title': 'Population Clock - France', 'link': 'https://www.census.gov/popclock/world/fr', 'description': 'France · 68.4M · 106.8 · 96.4 · 1.9 · Annual Population Estimates · Annual Population Estimates · Annual Population Estimates. A Closer Look.'}, {'title': 'France Population 1950-2024', 'link': 'https://www.macrotrends.net/global-metrics/countries/fra/france/population', 'description': 'The current population of France in 2024 is 64,881,830, a 0.19% increase from 2023. The population of France in 2023 was 64,756,584, a 0.2% increase from 2022.\xa0...'}, {'title': 'France Population', 'link': 'https://tradingeconomics.com/france/population', 'description': 'The total population in France was estimated at 68.1 million people in 2023, according to the latest census figures and projections from Trading Economics.'}, {'title': 'Population estimates', 'link': 'https://www.insee.fr/en/metadonnees/source/serie/s1169', 'description': 'On 1st January 2024, the population of France was 68.4 million. In 2023, the population increased by 0.3%.In 2023, 678,000 babies were born in France.'}, {'title': 'France - total population 2019-2029', 'link': 'https://www.statista.com/statistics/263743/total-population-of-france/', 'description': '4 juil. 2024 — In 2022, the total population of France amounted to 65.72 million people. See the population of Italy for comparison.'}, {'title': 'France', 'link': 'https://en.wikipedia.org/wiki/France', 'description': 'Its eighteen integral regions (five of which are overseas) span a combined area of 643,801 km2 (248,573 sq mi) and have a total population of 68.4 million as of\xa0...'}, {'title': 'Demography - Population at the beginning of the month - ...', 'link': 'https://www.insee.fr/en/statistiques/serie/000436387', 'description': '31 oct. 2024 — tableauDemography - Population at the beginning of the month - Metropolitan France ; 2020, December, 65,497 ; 2020, November, 65,490 ; 2020\xa0...'}]</span> (<span style="color: SlateBlue;">INFORMATION</span>)
+
+manage_results = <span style="color: yellow;">Selecting the best result: {'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."},.
+                            Extracting the best link: 'https://www.worldometers.info/world-population/france-population/'
+                            Producing the answer based on the information: The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1..</span>
+                             (<span style="color: SlateBlue;">Managing the search results.</span>)
+
+elaborate = <span style="color: yellow;">The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1.</span>(<span style="color: SlateBlue;">Using the information of the selected result, I elaborate the answer.</span>)
+</details>
+
 
 # Usage:
 ## Installation
@@ -205,7 +226,7 @@ reflexions = wot.constitute(subject, verbose=True)
 print(reflexions)
 ```
 
-### Composed generators
+### Composed Generators
 
 List of simple Generators can be built.
 | Noema Type | Python Type  | Usage |
@@ -217,10 +238,10 @@ List of simple Generators can be built.
 | SentenceList  | [str]  | `explaination:SentenceList = "Explain step by step why"`  |
 
 
-### Fill-in-the-blanks generator
+### Fill-in-the-blanks Generator
 | Noema Type | Python Type 
 |-----------|-----------|
-| Fill  | {key:value}  | 
+| Fill  | var_name.sub_var_name  | 
 
 ```python
 though:Fill = ("Categorizing user comment",
@@ -233,7 +254,7 @@ though:Fill = ("Categorizing user comment",
 ```
 
 
-### Reflexion generator:
+### Reflexion Generator:
 
 Reflexion generators provide a simple way to make the LLM *think* about something.
 
@@ -241,7 +262,8 @@ Reflexion generators provide a simple way to make the LLM *think* about somethin
 |-----------|-----------|-----------|
 | Reflexion  | str  | `builder:Reflexion = "How to build a house in the forest?"`  |
 
-It will follow an *abstract thinking* prompt:
+<details>
+  <summary>It will follow an abstract reflection prompt:</summary>
 
 ```
 [INST]How to build a house in the forest?
@@ -256,6 +278,64 @@ It will follow an *abstract thinking* prompt:
 Done.
 [/INST]
 ```
+</details>
+
+### Code Generator
+
+The `LanguageName` type provide a way to generate `LanguageName` code
+
+| Noema Type | Python Type  | Usage |
+|-----------|-----------|-----------|
+| Python  | str  | `interface:Python = "With pyqt5, genereate a window with a text field and a OK button."`  |
+
+<details>
+  <summary>Language List</summary>
+
+- Python
+- Java
+- C
+- Cpp
+- CSharp
+- JavaScript
+- TypeScript
+- HTML
+- CSS
+- SQL
+- NoSQL
+- GraphQL
+- Rust
+- Go
+- Ruby
+- PHP
+- Shell
+- Bash
+- PowerShell
+- Perl
+- Lua
+- R
+- Scala
+- Kotlin
+- Dart
+- Swift
+- ObjectiveC
+- Assembly
+- VHDL
+- Verilog
+- SystemVerilog
+- Julia
+- MATLAB
+- COBOL
+- Fortran
+- Ada
+- Pascal
+- Lisp
+- Prolog
+- Smalltalk
+- APL
+
+</details>
+
+
 
 ### Information
 
@@ -295,7 +375,8 @@ class WayOfThinking(Noesis):
 WayOfThinking().constitute(subject)
 ```
 
-Produce the following output:
+<details>
+  <summary>Produced output:</summary>
 
 ```
 Noesis:
@@ -316,3 +397,4 @@ Building a house in the forest requires careful planning and consideration of en
 
 --------------------------------------------------
 ```
+</details>
