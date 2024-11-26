@@ -59,7 +59,11 @@ The content *generated* by the LLM corresponding to `Reflexion` is the **Noema**
 
 # Full example:
 ```python
-from pendulum import Date
+from datetime import date
+from Noema import *
+from capabilities import *
+
+from datetime import date
 from Noema import *
 from capabilities import *
 
@@ -76,8 +80,8 @@ class WebSearch(Noesis):
         If you don't know the answer, you are able to find it by searching on the web.
         """
         task:Information = f"{self.request}"
-        date = Date.today().format("YYYY-MM-DD")
-        current_date:Information = f"The current date is: {date}"
+        current_date = date.today().strftime("%d-%m-%Y")
+        current_date_info:Information = f"The current date is: {current_date}"
         knowledge_reflexion:Fill = ("Thinking about the task.",
                                 f"""I have to think about the task: '{task.value}'.
                                 Based on the date and my knowledge, can I Know the answer? {Bool:known_answer}.
@@ -85,7 +89,7 @@ class WebSearch(Noesis):
         if knowledge_reflexion.known_answer:
             answer:Sentence = "Producing the answer."
         else:
-            search_results = google_search(task.value) # contained in capabilities module
+            search_results = google_search(task.value)
             results:Information = f"The search results are: {search_results}"
             manage_results:Fill = ("Managing the search results.",
                                     f"""Selecting the best result: {SubString:infos}.

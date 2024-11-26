@@ -1,4 +1,4 @@
-from pendulum import Date
+from datetime import date
 from Noema import *
 from capabilities import *
 
@@ -15,8 +15,8 @@ class WebSearch(Noesis):
         If you don't know the answer, you are able to find it by searching on the web.
         """
         task:Information = f"{self.request}"
-        date = Date.today().format("YYYY-MM-DD")
-        current_date:Information = f"The current date is: {date}"
+        current_date = date.today().strftime("%d-%m-%Y")
+        current_date_info:Information = f"The current date is: {current_date}"
         knowledge_reflexion:Fill = ("Thinking about the task.",
                                 f"""I have to think about the task: '{task.value}'.
                                 Based on the date and my knowledge, can I Know the answer? {Bool:known_answer}.
