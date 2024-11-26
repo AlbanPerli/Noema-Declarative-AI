@@ -1,6 +1,6 @@
 from Noema import *
 
-class DebugFill(Noesis):
+class MailCreator(Noesis):
     
     def description(self):
         """
@@ -29,9 +29,8 @@ class DebugFill(Noesis):
             
         return email_list
                    
-subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")#Mistral-Small-Instruct-2409-Q4_K_M.gguf")#Mistral-Nemo-Instruct-2407-Q6_K.gguf")#llama3Instruct.gguf")#Ministral-8B-Instruct-2410-Q6_K.gguf")#phi-3-mini-128k-instruct.Q4_K_M.gguf")#Qwen2.5-Coder-7B-Instruct.Q4_K_M.gguf")#Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf") #../Models/Codestral-22B-v0.1-Q3_K_M.gguf")#
-emails = DebugFill().constitute(subject)
+subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
+emails = MailCreator().constitute(subject)
 print("\n\n")
 print(emails)
-#print(subject.llm)
 
