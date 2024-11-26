@@ -1,78 +1,40 @@
+import requests
+from bs4 import BeautifulSoup
 
-def write_to_file(file: str, content: str) -> None:
-    """
-    Write some content to a file.
-    Create the file if it does not exist.
-
-    :param file: The file to write to
-    :param content: The content to write
-    """
-    with open(file, "w") as f:
-        f.write(content)
+def google_search(query, num_results=10):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    url = f"https://www.google.com/search?q={query.replace(' ', '+')}&num={num_results}"
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Erreur lors de la requête : {response.status_code}")
+    
+    soup = BeautifulSoup(response.text, "html.parser")
+    results = []
+    
+    for result in soup.select(".tF2Cxc"):
+        title = result.select_one("h3").text if result.select_one("h3") else None
+        link = result.select_one("a")["href"] if result.select_one("a") else None
+        description = result.select_one(".VwiC3b").text if result.select_one(".VwiC3b") else None
         
-        
-def read_file(file: str) -> str:
-    """
-    Read the content of a file.
-
-    :param file: The file to read
-    :return: The content of the file
-    """
-    with open(file, "r") as f:
-        return f.read()
+        if title and link:
+            results.append({"title": title, "link": link, "description": description})
+    
+    return results
 
 
-def multiply(a: int, b: int) -> int:
-    """
-    Multiply two integers together.
-
-    :param a: The first integer
-    :param b: The second integer
-    :return: The product of the two integers
-    """
-    return a * b
-
-
-def multiply(a: float, b: float) -> float:
-    """
-    Multiply two float together.
-
-    :param a: The first float
-    :param b: The second float
-    :return: The product of the two floats
-    """
-    return a * b
-
-
-def sum(a: int, b: int) -> int:
-    """
-    Sum two integers together.
-
-    :param a: The first integer
-    :param b: The second integer
-    :return: The sum of the two integers
-    """
-    return a * b
-
-
-def sum(a: float, b: float) -> float:
-    """
-    Sum two float together.
-
-    :param a: The first float
-    :param b: The second float
-    :return: The sum of the two floats
-    """
-    return a * b
-
-
-def remove_from_list(a: list, b: int) -> list:
-    """
-    Remove an element from a list.
-
-    :param a: The list
-    :param b: The index of the element to remove
-    :return: The list without the element
-    """
-    a.pop(b)
-    return a
+def get_page_content(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Erreur lors de la requête : {response.status_code}")
+    
+    # extract text from HTML
+    soup = BeautifulSoup(response.text, "html.parser")
+    for script in soup(["script", "style"]):
+        script.extract()
+    return soup.get_text()

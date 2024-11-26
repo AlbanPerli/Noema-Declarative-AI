@@ -2,7 +2,6 @@
 import importlib
 import inspect
 import re
-from Noema._ListGenerator import ListGenerator
 
 class PyExplorer:
     
@@ -10,25 +9,10 @@ class PyExplorer:
     def extractTypeWhiteList(module_name):
         class_names, object_dict = PyExplorer._extract_class_names_and_objects(module_name)
         objects = []
-        # get all objects from object_dict
         for key in object_dict:
             objects.append(object_dict[key])
-        names, composed_object_dict = PyExplorer.build_composed_generators_names(objects)
-        class_names.extend(names)
-        object_dict.update(composed_object_dict)
-
+        
         return class_names, object_dict
-    
-    @staticmethod
-    def build_composed_generators_names(atomic_objects):
-        composed_generators = []
-        object_dict = {}
-        for atomic_object in atomic_objects:
-             obj = ListGenerator(atomic_object())
-             obj_name = obj.to_string_name()
-             composed_generators.append(obj_name)
-             object_dict[obj_name] = obj
-        return composed_generators, object_dict
     
     @staticmethod
     def _extract_class_names_and_objects(module_name):

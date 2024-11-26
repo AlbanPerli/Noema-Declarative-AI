@@ -1,17 +1,15 @@
 from guidance import gen
 from Noema._AtomicTypes import *
-from Noema._ListGenerator import ListGenerator
-from Noema._Reflexion import Reflexion
 from Noema._patternBuilder import PatternBuilder
 from Noema._pyExplorer import PyExplorer
-from Noema.generators import ListOf
+
 
 class Noema:
 
     def __init__(self):
         process = []
         
-    def action_needed(self, model, state):
+    def action_needed(self, model, state, local_vars, verbose):
         lm = state.llm
         lm += f"\nExtract the main action from '{model.value}'\n"
         lm += "Action: " + gen(stop=[".","\n"],name="action") + "\n"
@@ -46,42 +44,35 @@ class Noema:
             print("Call will be: ", func_name + "(" + ",".join(parameters_values) + ")")
             
         state.llm += model.display_var() + "FUNCTION RES" + "\n"
-        return { "value": "FUNCTION RES", "noesis": model.value, "noema": model.value }
-        
-    def gen_list(self, model, subject):
-        atomic_type = model.type.split("[")[1].split("]")[0]
-        composedType = ListGenerator(atomic_type)
-        if model.annotation is not None:
-            res, noema, prompt = Reflexion().execute(noesis_model=model,state=subject)
-            print(f"\033[94m{model.value}\033[0m = \033[93m{res}\033[0m")
-            return { "value": res, "noesis": prompt, "noema": noema}
-        res = composedType.execute(noesis_model=model,state=subject)
-        print(f"\033[94m{model.value}\033[0m = \033[93m{res}\033[0m")
-        return { "value": res, "noesis": model.value, "noema": model.value }
+        return { "value": "FUNCTION RES", "noesis": model.value, "noema": model.value, "variables":{} }
     
-    def gen_atomic(self, model, subject):
+    def gen_atomic(self, model, subject, local_vars, verbose):
         instance = obj = PatternBuilder.instance().objects_by_type[model.type]()
-        if model.annotation is not None:
+        if model.type == "Fill":
+            res = instance.execute(noesis_model=model,state=subject,local_vars=local_vars)
+            if verbose:
+                print(f"{model.variable} = \033[93m{res}\033[0m (\033[94m{model.value[0]}\033[0m)")
+            return { "value": res, "noesis": model.value, "noema": model.value, "variables":{}}
+        elif model.type == "Reflexion":
             res, noema, prompt = Reflexion().execute(noesis_model=model,state=subject)
-            print(f"\033[94m{model.value}\033[0m = \033[93m{res}\033[0m")
-            return { "value": res, "noesis": prompt, "noema": noema}
+            if verbose:
+                print(f"{model.variable} = \033[93m{res}\033[0m (\033[94m{prompt}\033[0m)")
+            return { "value": res, "noesis": model.value, "noema": noema, "variables":{}}
+        elif model.type == "Information":
+            res = instance.execute(noesis_model=model,state=subject)
+            if verbose:
+                print(f"{model.variable} = \033[93m{res}\033[0m (\033[94mINFORMATION\033[0m)")
+            return { "value": res, "noesis": model.value, "noema": model.value, "variables":{} }
         else:
             res = instance.execute(noesis_model=model,state=subject)
-            print(f"\033[94m{model.value}\033[0m = \033[93m{res}\033[0m")
-            return { "value": res, "noesis": model.value, "noema": model.value }
-    
-    def generateFromModel(self, model, subject) -> dict:
+            if verbose:
+                print(f"{model.variable} = \033[93m{res}\033[0m (\033[94m{model.value}\033[0m)")
+            return { "value": res, "noesis": model.value, "noema": model.value, "variables":{}} 
+
+    def generateFromModel(self, model, subject, local_vars, verbose) -> dict:
         type = model.type
         res = None
-        if "list" in type:
-            if model.annotation == "Action":
-                print("Action needed")
-                return self.action_needed(model, subject)
-            else:
-                return self.gen_list(model, subject)
+        if model.annotation == "Action":
+            return self.action_needed(model, subject, local_vars, verbose)
         else:
-            if model.annotation == "Action":
-                print("Action needed")
-                return self.action_needed(model, subject)
-            else:
-                return self.gen_atomic(model, subject)
+            return self.gen_atomic(model, subject, local_vars, verbose)
