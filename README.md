@@ -63,10 +63,6 @@ from datetime import date
 from Noema import *
 from capabilities import *
 
-from datetime import date
-from Noema import *
-from capabilities import *
-
 class WebSearch(Noesis):
     
     def __init__(self,request):
