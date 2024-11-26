@@ -180,8 +180,6 @@ They always produce the corresponding python type.
 | Word  | str  | `better:Word = "Which instruct LLM is the best?"`  |
 | Sentence  | str  | `explaination:Sentence = "Explain why"`  |
 | Paragraph  | str  | `long_explaination:Paragraph = "Give mode details"`  |
-| Information  | str  | `tips:Information = "Here you can inject some information in the LLM"`  |
-
 
 ### Example:
 ```python
