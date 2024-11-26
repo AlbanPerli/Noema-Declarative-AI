@@ -2,7 +2,17 @@
   <img src="logoNoema.jpg" alt="ReadMe Banner"/>
 </p>
 
-**Noema is an application of the [*declarative* programming](https://en.wikipedia.org/wiki/Declarative_programming) paradigm to a langage model.** With Noema, you can control the model and choose the path it will follow. This framework aims to enable developpers to use LLM as an interpretor, not as a source of truth. Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidance](https://github.com/guidance-ai/guidance)'s shoulders.
+
+**Noema is a new way of programming, using seamless integration between python and llm's generations.**
+
+# Background:
+
+**Noema is an application of the [*declarative* programming](https://en.wikipedia.org/wiki/Declarative_programming) paradigm to a langage model.** 
+
+With Noema, you can control the model and choose the path it will follow. This framework aims to enable developpers to use **LLM as a though interpretor**, not as a source of truth.
+
+Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidance](https://github.com/guidance-ai/guidance)'s shoulders.
+
 
 - [Concept](#Concept)
 - [Installation](#installation)
@@ -14,11 +24,87 @@
 - **Noesis**: can be seen as the description of a function
 - **Noema**: is the representation (step by step) of this description
 - **Constitution**: is the process of transformation Noesis->Noema.
-- **(Transcendantal) Subject**: the object producing the Noema via the constitution of the noesis. Here, the LLM.
-- **Horizon**: the environement of the subject, in other words, a context.
+- **Subject**: the object producing the Noema via the constitution of the noesis. Here, the LLM.
 
-**Noema**/**Noesis**, **Subject**, **Horizon** and **Constitution** are a pedantic and naive application of concept borrowed from [Husserl's phenomenology](https://en.wikipedia.org/wiki/Edmund_Husserl).
+**Noema**/**Noesis**, **Subject**, and **Constitution** are a pedantic and naive application of concept borrowed from [Husserl's phenomenology](https://en.wikipedia.org/wiki/Edmund_Husserl).
 
+
+## ReAct prompting:
+We can use ReAct prompting with LLM.
+
+`ReAct` prompting is a powerful way for guiding a LLM.
+
+### ReAct example:
+```You are in a loop of though.
+Question: Here is the question 
+Reflexion: Thinking about the question
+Observation: Providing observation about the Reflexion
+Analysis: Formulating an analysis about your current reflexion
+Conclusion: Conclude by a synthesis of the reflexion.
+
+Question: {user_input}
+Reflexion:
+```
+
+In that case, the LLM will follow the provided steps: `Reflexion,Observation,Analysis,Conclusion`
+
+`Thinking about the quesion` is the **Noesis** of `Reflexion`
+
+The content *generated* by the LLM corresponding to `Reflexion` is the **Noema**.
+
+### Noema let you write python code that automagically:
+1. Build the ReAct prompt
+2. Let you intercepts (constrained) generations
+3. Use it in standard python code
+
+# Full example:
+```python
+from pendulum import Date
+from Noema import *
+from capabilities import *
+
+class WebSearch(Noesis):
+    
+    def __init__(self,request):
+        super().__init__()
+        self.request = request
+    
+    def description(self):
+        """
+        You are a specialist in information retrieval.
+        Always looking for the best information to answer a question.
+        If you don't know the answer, you are able to find it by searching on the web.
+        """
+        task:Information = f"{self.request}"
+        date = Date.today().format("YYYY-MM-DD")
+        current_date:Information = f"The current date is: {date}"
+        knowledge_reflexion:Fill = ("Thinking about the task.",
+                                f"""I have to think about the task: '{task.value}'.
+                                Based on the date and my knowledge, can I Know the answer? {Bool:known_answer}.
+                                """)
+        if knowledge_reflexion.known_answer:
+            answer:Sentence = "Producing the answer."
+        else:
+            search_results = google_search(task.value) # contained in capabilities module
+            results:Information = f"The search results are: {search_results}"
+            manage_results:Fill = ("Managing the search results.",
+                                    f"""Selecting the best result: {SubString:infos}.
+                                    Extracting the best link: {SubString:link}
+                                    Producing the answer based on the information: {Sentence:answer}.
+                                    """)
+            elaborate:Paragraph = "Using the information of the selected result, I elaborate the answer."
+            return elaborate.value, manage_results.link
+            
+subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
+answer,source = WebSearch("What is the population of France?").constitute(subject)
+
+print(answer) 
+# The current population of France is 66,589,408 as of Sunday, November 24, 2024, based on Worldometer's elaboration of the latest United Nations data1.
+print(source)
+# 'https://www.worldometers.info/world-population/france-population/'
+```
+
+# Usage:
 ## Installation
 
 ```bash
@@ -32,226 +118,203 @@ pip install Noema
 ```python
 from Noema import *
 
-s = Subject("path_to_model.gguf") # Full Compatibiliy with LLamaCPP.
-
-s.add(though = "Time is the only problem") # store "Time is the only problem" in though
+subject = Subject("path/to/your/model.gguf") # Full Compatibiliy with LLamaCPP.
 ```
 
-### Create an horizon and its constitution
+### Create a way of thinking: 
+
+#### 1. Create a class that inherits from Noesis
+#### 2. Add a method named `description`
+#### 3. Add a system prompt using the python docstring
+#### 4. Write python code
+
 
 ```python
 from Noema import *
 
-s = Subject("path_to_model.gguf") # Full Compatibiliy with LLamaCPP.
-s.add(though = "Time is the only problem") # store "Time is the only problem" in though
+subject = Subject("path/to/your/model.gguf")
 
-s= Horizon(
-  Sentence(though_explanation = "You explain why {though}"), # The sentence produced is stored in though_explanation
-  Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), # The model produce an python integer that is stored in explanation_note
-).constituteWith(s) # The horizon is constituted by the LLM
+class WayOfThinking(Noesis):
+    
+    def description(self):
+        """
+        Here write the system prompt, describing the role/task of the system.
+        In the same way as for a classical prompt, you can use multiline.
+        """
+        task_list = ["Task description 1", "Task description 2"]
+        reflexions = []
+        for task_description in task_list:
+            task:Information = f"{task_description}" # Insert description
+            thought:Fill = ("""Thinking about the task.
+                            Here you can write the different steps of the thought process.
+                            1. Step 1: I do this.
+                            2. Step 2: I do that.
+                            3. Step 3: I do this other thing.
+                            """,
+                            f"""Step 1: {Sentence:step1}
+                            Step 2: {Sentence:step2}
+                            Step 3: {Sentence:step3}
+                            """)
+            print(thought.step1) # easy access to the though variables (step1,step2,step3)
+            reflexion:Paragraph = "Here you can write a reflexion about the thought process."
+            reflexions.append(reflexion.value)
+        return reflexions
 
-# Read the noema
-print(s.noema)
-# You are functioning in a loop of though. Here is your reasoning step by step:
-#   #though_EXPLANATION: Explain why '{though}'.
-#   #EXPLANATION_NOTE: Give a note between 0 and 10 to qualify the quality of your explanation.
-
-# Here is the result of the reasoning:
-#  #though_EXPLANATION: The reason is that time is the only thing that is constant and cannot be changed.
-#  #EXPLANATION_NOTE: 10
-
-# Acces to each constitution separatly
-print(s.explanation_note * 2) # The value of 'explanation_note' is an int.
-# 20
+wot = WayOfThinking()
+reflexions = wot.constitute(subject)
+print(reflexions) # contains the reflexions produced by the LLM
 ```
 
-### Simple generators
+## Generators
+Generators are used to generate content from the subject (LLM) through the noesis (the task description).
 
-Generators can be used to generate content from the subject (LLM) through the noesis (here, the task description).
+They always produce the corresponding python type.
 
+### Simple Generators
+
+| Noema Type | Python Type  | Usage |
+|-----------|-----------|-----------|
+| Int  | int  | `number:Int = "Give me a number between 0 and 10"`  |
+| Float  | float  | `number:Float = "Give me a number between 0.1 and 0.7"`  |
+| Bool  | bool  | `truth:Bool = "Are local LLMs better than online LLMs?"`  |
+| Word  | str  | `better:Word = "Which instruct LLM is the best?"`  |
+| Sentence  | str  | `explaination:Sentence = "Explain why"`  |
+| Paragraph  | str  | `long_explaination:Paragraph = "Give mode details"`  |
+| Information  | str  | `tips:Information = "Here you can inject some information in the LLM"`  |
+
+
+### Example:
 ```python
-from Noema import *
+class WayOfThinking(Noesis):
+    
+    def description(self):
+        """
+        You are a nice assistant.
+        """
+        found = False
+        hello:Word = "Say 'hello' in French"
+        while(not found):
+            nb_letter:Int = f"How many letter in {hello.value}"
+            verification:Bool = f"Does {hello.value} really contains {nb_letter.value} letters?"
+            if verification.value:
+                print("Verification done!")
+                found = True
 
-horizon = Horizon(
-  Sentence(var_name = "task description"), # Produce a sentence stored in var_name
-  Word(var_name = "task description"),     # Produce a word stored in var_name
-  Int(var_name = "task description"),      # Produce an int stored in var_name
-  Float(var_name = "task description"),    # Produce a float stored in var_name
-  Bool(var_name = "task description"),     # Produce a bool stored in var_name
-)
+        return hello.value, nb_letter.value
+
+wot = WayOfThinking()
+reflexions = wot.constitute(subject, verbose=True)
+print(reflexions)
 ```
 
 ### Composed generators
 
-ListOf can be built with simple generators or a custom `Step`.
+List of simple Generators can be built.
+| Noema Type | Python Type  | Usage |
+|-----------|-----------|-----------|
+| IntList  | [int]  | `number:IntList = "Give me a list of number between 0 and 10"`  |
+| FloatList  | [float]  | `number:FloatList = "Give me a list of number between 0.1 and 0.7"`  |
+| BoolList  | [bool]  | `truth:BoolList = "Are local LLMs better than online LLMs, and Mistral better than LLama?"`  |
+| WordList  | [str]  | `better:WordList = "List the best instruct LLM"`  |
+| SentenceList  | [str]  | `explaination:SentenceList = "Explain step by step why"`  |
+
+
+### Fill-in-the-blanks generator
+| Noema Type | Python Type 
+|-----------|-----------|
+| Fill  | {key:value}  | 
 
 ```python
-from Noema import *
+though:Fill = ("Categorizing user comment",
+                """The user language is {Word:language}
+                From a psychologist point of view, this comment is {Sentence:psycho}"""
 
-horizon = Horizon(
-  ListOf(Word, var_name = "task description",),  # Produce a list of Word stored in var_name
-  ListOf(Int, var_name = "task description",),   # Produce a list of int stored in var_name
-  ...
-)
+# Property are added to though
+# though.language 
+# thought.psycho
 ```
 
-### Selector
 
-```python
-from Noema import *
+### Reflexion generator:
 
-s = Subject("path_to_model.gguf")
+Reflexion generators provide a simple way to make the LLM *think* about something.
 
-s= Horizon(
-  Select(this_is_the_future = "Are local LLMs the future?", options=["Yes of course","Never!"]), # The model can only choose between "Yes of course" and "Never!". 
-).constituteWith(s) # The horizon is constituted by the LLM
+| Noema Type | Python Type  | Usage |
+|-----------|-----------|-----------|
+| Reflexion  | str  | `builder:Reflexion = "How to build a house in the forest?"`  |
+
+It will follow an *abstract thinking* prompt:
+
+```
+[INST]How to build a house in the forest?
+ Follow these steps of reasoning, using a loop to determine whether the process should continue or if the reflection is complete:
+1. Initial Hypothesis: Provide a first answer or explanation based on your current knowledge.
+2. Critical Analysis: Evaluate the initial hypothesis. Look for contradictions, weaknesses, or areas of uncertainty.
+3. Conceptual Revision: Revise or improve the hypothesis based on the critiques from the Critical Analysis.
+4. Extended Synthesis: Develop a more complete and nuanced response by incorporating additional perspectives or knowledge.
+5. Loop or Conclusion: Return to the Decision Point. If the answer is now coherent and well-justified, you repond 'satisfying' and move to the Conclusion. If further refinement is needed, respond 'loop again' and go to the Critical Analysis. 
+6. Final Conclusion: Once the reflection is considered complete, provide a final answer, clearly explaining why this response is coherent and well-justified, summarizing the key steps of the reasoning process.
+7. Quality of the reflection: Provide a quality assessment of the reflection process. 
+Done.
+[/INST]
 ```
 
 ### Information
 
-Information are useful to insert some context to the current step of the noesis.
-Here we use a simple string, but we can also call a python function to do some RAG or other tasks.
+The type Information is useful to insert some context to the LLM at the right time in the reflexion process.
 
+| Noema Type | Python Type  | Usage |
+|-----------|-----------|-----------|
+| Information  | str  | `tips:Information = "Here you can inject some information in the LLM"`  |
+
+Here we use a simple string, but we can also insert a string from a python function call, do some RAG or any other tasks.
+
+## Noesis / Noema / Value
+
+Every generator as the following properties by default:
 ```python
 from Noema import *
 
-s = Subject("path_to_model.gguf")
+subject = Subject("path/to/your/model.gguf")
 
-s= Horizon(
-    Information("You act like TARS in interstellar."),
-    Sentence(joke = "Tell a short joke."),
-    Print("{joke}")
-).constituteWith(s)
+class WayOfThinking(Noesis):
+    
+    def description(self):
+        """
+        You are a specialist in nice house building.
+        """
+        builder:Reflexion = "How to build a house in the forest?"
+        print("Noesis:")
+        print(builder.noesis)
+        print("-"*50)
+        print("Noema:")
+        print(builder.noema)
+        print("-"*50)
+        print("Value:")
+        print(builder.value)
+        print("-"*50)
+
+WayOfThinking().constitute(subject)
 ```
 
-### Control Flow
+Produce the following output:
 
-#### IF/ELSE
-
-```python
-from Noema import *
-
-s = Subject("path_to_model.gguf")
-s.add(though = "Time is the only problem") # store "Time is the only problem" in though
-
-s = Horizon(
-    Var(final_though=None), # Create a variable final_though
-    Sentence(though_explanation = "Explain why '{though}'."), 
-    Int(explanation_note = "Give a note between 0 and 10 to qualify the quality of your explanation."), 
-    Select(auto_analysis="Do some auto-analysis, and choose a word to qualify your note", options=["Fair","Over optimistic","Neutral"]),
-    IF(lambda: s.explanation_note < 5, [
-        Information("The explanation is not clear enough, and the note is too low."),
-        Int(points_to_add = "How many points do you think you should add to be fair?"),
-        Sentence(points_explanation = "Explain why you think you should add {points_to_add} points."),
-        Var(final_though = "The explanation is not clear enough, and the note is too low. I should add {points_to_add} points."),
-    ],ELSE=[
-       IF(lambda: s.auto_analysis == 'Over optimistic', [  
-            Int(points_to_remove ="How many points do you think you should remove to be fair?"),
-            Sentence(points_explanation = "Explain why you think you should remove {points_to_remove} points."),
-            Var(final_though = "The explanation is not clear enough, and the note is too low. I should remove {points_to_remove} points."),
-       ],ELSE=[
-            Print("The explanation is clear enough, and the note is fair."),   
-            Var(final_though = "The note is fair."),
-        ]),
-    ])
-).constituteWith(s) # The horizon is constituted by the LLM
-
-print(s.final_though) # Print the final though
-# The explanation is not clear enough, and the note is too low. I should add 5 points.
 ```
+Noesis:
+How to build a house in the forest?
+--------------------------------------------------
+Noema:
 
-#### ForEach
-```python
-from Noema import *
+        ***Initial Hypothesis: To build a house in the forest, you need to find a suitable location, clear the area of trees and debris, and then construct the house using materials such as wood, stone, and metal. You may also need to consider factors such as water supply, electricity, and waste disposal.
+While this initial hypothesis provides a general outline of the process, it lacks specific details and considerations. For example, it does not address the importance of selecting a location with good drainage to prevent flooding, or the need to obtain necessary permits and approvals from local authorities.
+To build a house in the forest, you should first research and select a suitable location, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment.
+Building a house in the forest requires careful planning and consideration of environmental factors. You should research and select a location that is suitable for building, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment. Additionally, you may want to consider building a greenhouse or garden to grow your own food and reduce your reliance on outside resources.
+loop again
+Building a house in the forest requires careful planning and consideration of environmental factors. You should research and select a suitable location, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment. Additionally, you may want to consider building a greenhouse or garden to grow your own food and reduce your reliance on outside resources. This response is coherent and well-justified because it takes into account the importance of selecting a suitable location, obtaining necessary permits and approvals, and using sustainable materials and systems to minimize the impact on the environment.
+Reflexion loop completed.
+--------------------------------------------------
+Value:
+Building a house in the forest requires careful planning and consideration of environmental factors. You should research and select a suitable location, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment. Additionally, you may want to consider building a greenhouse or garden to grow your own food and reduce your reliance on outside resources. This response is coherent and well-justified because it takes into account the importance of selecting a suitable location, obtaining necessary permits and approvals, and using sustainable materials and systems to minimize the impact on the environment.
 
-s = Subject("path_to_model.gguf")
-
-s = Horizon(
-    ListOf(Sentence, problems =  "What are the problems you are facing (in order of difficulty)?"), # The model produce a list of sentence that is stored in {problems}
-    ForEach(lambda: s.problems, [
-        Sentence(item_explanation = "Explain why '{item}' is the problem No {idx}."), 
-        Print("Pb Nb {idx}: {item}. Explanation: {item_explanation}") # Print doesn't interfere with the Noema 
-    ])
-).constituteWith(s) # The horizon is constituted by the LLM
-
-# Pb Nb 1: I don't know what to do next.. Explanation: Because if you don't know what to do next, you can't make progress and achieve your goals.
-# Pb Nb 2: I don't have enough information to make a decision.. Explanation: Because if you don't have enough information, you can't make an informed decision and may make a mistake that could set you back or cause problems down the line.
-# Pb Nb 3: I'm not sure if I'm on the right track.. Explanation: Because if you're not sure if you're on the right track, you may be wasting time and effort on a path that won't lead to your goals, and you may not realize it until it's too late to change course.
-```
-
-#### While
-```python
-s = Subject("path_to_model.gguf")
-
-s = Horizon(
-    Information("You have to choose a job name in the field of computer science."),
-    Var(word_length = 0 ),
-    While(lambda: s.word_length < 9,[
-        Word(job_name = "Give a good job name:"),
-        Int(word_length = "How many letters are in the word {job_name}?"),
-        Print("Selected job {job_name}"),
-        Information("You have to choose a new job name each time."),
-    ]),
-    Print("The word {job_name} has more than 10 letters."),
-    PrintNoema()
-).constituteWith(s)
-```
-
-
-### NOESIS
-
-The Noesis is the descriptive process of a though.
-You can think about it as a set of rules aiming to attain a goal.
-In a function we think about steps, here you have to *declare how to think* about the steps.
-
-A Noesis need a description, here: "Find a job name in a field." and can take optionnal parameters. 
-The `Return` is optional.
-
-```python
-from Noema import *
-
-s = Subject("path_to_model.gguf")
-
-find_job_name = Noesis("Find a job name in a field.",["field_name","max_length"],[
-    Information("You have to choose a job name in the field of {field_name}."),
-    Var(word_length = 0),
-    While(lambda: s.word_length < s.max_length, [
-        Word(job_name = "Give a good job name:"),
-        Int(word_length = "How many letters are in the word {job_name}?"),
-        Print("Selected job {job_name}"),
-        Information("You have to choose a new job name each time."),
-    ]),
-    Return("{job_name} is a good job name in the field of {field_name}.") #Return value
-])
-
-s = Horizon(
-    Constitute(job_name = lambda:find_job_name(s, field_name="IT",max_length=10)), 
-    Print("{job_name} has more than 10 letters."),
-).constituteWith(s) # The horizon is constituted by the LLM
-
-# Selected job programmer
-# Duration for 'Find a job name in a field.' : 00:01s
-# programmer is a good job name in the field of IT. has more than 10 letters.
-```
-
-
-### Python Function Call
-
-In the Noesis we can call a python function. 
-The parameters can be value extracted from the context i.e. a `Var` using `{var_name}`.
-Return value of the python function called can be stored in a `Var`.
-
-```python
-from Noema import *
-
-s = Subject("path_to_model.gguf")
-
-def count_letters(word):
-    return len(word)
-
-s = Horizon(
-    Var(palindrome = "TENET"), # store "TENET" in {palindrome}
-    CallFunction(word_length = lambda: count_letters(s.palindrome)), # store the result of the function count_letters in {word_length}
-    Print("The word '{palindrome}' has {word_length} letters."),
-).constituteWith(s)
+--------------------------------------------------
 ```
