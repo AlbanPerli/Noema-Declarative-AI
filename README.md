@@ -95,7 +95,7 @@ class WebSearch(Noesis):
             elaborate:Paragraph = "Using the information of the selected result, I elaborate the answer."
             return elaborate.value, manage_results.link
             
-subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
+subject = Subject("path/to/your/model.gguf")
 answer,source = WebSearch("What is the population of France?").constitute(subject)
 
 print(answer) 
