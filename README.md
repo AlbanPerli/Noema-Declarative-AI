@@ -104,6 +104,41 @@ print(source)
 # 'https://www.worldometers.info/world-population/france-population/'
 ```
 
+
+<details>
+  <summary>LLM output:</summary>
+
+```
+[INST]You are a specialist in information retrieval.
+Always looking for the best information to answer a question.
+If you don't know the answer, you are able to find it by searching on the web.
+You are functionning in a loop of though. Your response can be multiline. Here is the reasonning you are currently executing:
+
+#TASK: {self.request}.
+#CURRENT_DATE: The current date is: {date}.
+#KNOWLEDGE_REFLEXION: Thinking about the task.
+#ANSWER: Producing the answer.
+#RESULTS: The search results are: {search_results}.
+#MANAGE_RESULTS: Managing the search results.
+#ELABORATE: Using the information of the selected result, I elaborate the answer.
+[/INST]
+
+#TASK:What is the population of France?
+#CURRENT_DATE:The current date is: 2024-11-26
+#KNOWLEDGE_REFLEXION: I have to think about the task: 'What is the population of France?'.
+                        Based on the date and my knowledge, can I Know the answer? no.
+                        
+#RESULTS:The search results are: [{'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."}, {'title': 'Demographics of France', 'link': 'https://en.wikipedia.org/wiki/Demographics_of_France', 'description': 'As of 1 January 2021, 66,142,961 people lived in Metropolitan France, while 2,230,472 lived in overseas France, for a total of 68,373,433 inhabitants in the\xa0...'}, {'title': 'Total population in France 1982-2024 - Demographics', 'link': 'https://www.statista.com/statistics/459939/population-france/', 'description': '12 sept. 2024 — The total population of France has been increasing for years now, exceeding 68 million inhabitants in 2024. France is the second most populous\xa0...'}, {'title': 'Population Clock - France', 'link': 'https://www.census.gov/popclock/world/fr', 'description': 'France · 68.4M · 106.8 · 96.4 · 1.9 · Annual Population Estimates · Annual Population Estimates · Annual Population Estimates. A Closer Look.'}, {'title': 'France Population 1950-2024', 'link': 'https://www.macrotrends.net/global-metrics/countries/fra/france/population', 'description': 'The current population of France in 2024 is 64,881,830, a 0.19% increase from 2023. The population of France in 2023 was 64,756,584, a 0.2% increase from 2022.\xa0...'}, {'title': 'France Population', 'link': 'https://tradingeconomics.com/france/population', 'description': 'The total population in France was estimated at 68.1 million people in 2023, according to the latest census figures and projections from Trading Economics.'}, {'title': 'Population estimates', 'link': 'https://www.insee.fr/en/metadonnees/source/serie/s1169', 'description': 'On 1st January 2024, the population of France was 68.4 million. In 2023, the population increased by 0.3%.In 2023, 678,000 babies were born in France.'}, {'title': 'France - total population 2019-2029', 'link': 'https://www.statista.com/statistics/263743/total-population-of-france/', 'description': '4 juil. 2024 — In 2022, the total population of France amounted to 65.72 million people. See the population of Italy for comparison.'}, {'title': 'France', 'link': 'https://en.wikipedia.org/wiki/France', 'description': 'Its eighteen integral regions (five of which are overseas) span a combined area of 643,801 km2 (248,573 sq mi) and have a total population of 68.4 million as of\xa0...'}, {'title': 'Demography - Population at the beginning of the month - ...', 'link': 'https://www.insee.fr/en/statistiques/serie/000436387', 'description': '31 oct. 2024 — tableauDemography - Population at the beginning of the month - Metropolitan France ; 2020, December, 65,497 ; 2020, November, 65,490 ; 2020\xa0...'}]
+#MANAGE_RESULTS: Selecting the best result: {'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."},.
+                            Extracting the best link: 'https://www.worldometers.info/world-population/france-population/'
+                            Producing the answer based on the information: The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1..
+                            
+#ELABORATE: The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1.
+
+```
+
+</details>
+
 <details>
   <summary>Verbose output:</summary>
 
