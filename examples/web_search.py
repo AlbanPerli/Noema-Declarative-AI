@@ -35,7 +35,7 @@ class WebSearch(Noesis):
             return elaborate.value, manage_results.link
             
 subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
-answer,source = WebSearch("What is the population of France?").constitute(subject)
+answer,source = WebSearch("What is the population of France?").constitute(subject, verbose=True)
 print("\n\n")
 print(subject)
 print("\n\n")

@@ -30,7 +30,7 @@ class MailCreator(Noesis):
         return email_list
                    
 subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
-emails = MailCreator().constitute(subject)
+emails = MailCreator().constitute(subject, verbose=True)
 print("\n\n")
 print(emails)
 
