@@ -114,7 +114,7 @@ class PyNoesisBuilder:
                     try:
                         values = self.extract_tuple_strings(tuple_content)
                     except ValueError as ve:
-                        print(f"Erreur lors de l'extraction des chaînes : {ve}")
+                        print(f"Error while extracting tuple strings: {ve}")
                         return
 
                     fill = values[1]

@@ -15,11 +15,8 @@ setup(
     url='https://github.com/AlbanPerli/Noema-Declarative-AI',
     packages=find_packages(),
     install_requires=[
+        'llama-cpp-python',
         'guidance',
-        'chromadb',
-        'sentence_transformers',
-        'numpy',
-        'autopep8',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
