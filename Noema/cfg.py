@@ -88,6 +88,10 @@ class G():
     @guidance(stateless=True)
     def sentence(lm):
         return lm + one_or_more(G.alphaNumPunctForSentence())+"."
+    
+    @guidance(stateless=True)
+    def free(lm):
+        return lm + one_or_more(G.alphaNumPunctForParagraph())+"."
 
     @guidance(stateless=True)
     def number(lm):

@@ -24,7 +24,6 @@ class Email(CustomGenerator):
         res = llm["response"]
         state.llm += noesis_model.display_var() + " " + res + "\n"
         return self.return_type(res)
-
     
 class Url(AtomicGenerator):
     grammar = G.url_http_https()
@@ -220,6 +219,23 @@ class Word(AtomicGenerator):
         state.llm += noesis_model.display_var() + " " + res + "\n"
         return self.return_type(res)
     
+    
+
+class Free(AtomicGenerator):
+    grammar = G.free()
+    return_type = str
+    
+    def execute(self, noesis_model, state, local_vars = None):
+        if self.grammar is None:
+            state.llm += noesis_model.display_var() + noesis_model.value + "\n"
+            return self.return_type(noesis_model.value)
+        llm = state.llm
+        llm += noesis_model.value + "\n"
+        llm += noesis_model.display_var() + " " + capture(G.free(), name="response")
+        res = llm["response"]
+        state.llm += noesis_model.display_var() + " " + res + "\n"
+        return self.return_type(res)    
+
 class Sentence(AtomicGenerator):
     grammar = G.sentence()
     return_type = str

@@ -11,8 +11,7 @@ class MailCreator(Noesis):
         for i in range(4):
             if thought.strategy != None:
                 last_strategy:Information = f"{thought.strategy}"
-            
-            thought:Fill = ("""Thinking about a new strategy.
+            thought:Fill = (f"""Thinking about a new strategy
                             Reformulate the strategy: I reformulate the strategy.
                             Criticize the strategy: I criticize the strategy.
                             Define a new strategy: I define a new strategy.
@@ -29,7 +28,7 @@ class MailCreator(Noesis):
             
         return email_list
                    
-subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
+subject = Subject("path/to/your/model.gguf")
 emails = MailCreator().constitute(subject, verbose=True)
 print("\n\n")
 print(emails)

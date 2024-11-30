@@ -1,6 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 
+# read a text file 
+def read_text_file(file_path):
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
+
 def google_search(query, num_results=10):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"

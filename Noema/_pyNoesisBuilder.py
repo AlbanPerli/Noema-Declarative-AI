@@ -145,11 +145,14 @@ class PyNoesisBuilder:
                             updated_lines[i] = f"{indent}pass"
                     
             def extract_tuple_strings(self, tuple_content):
+                tuple_content = tuple_content.replace('f"', '"').replace("f'", "'")
                 tuple_str = f"({tuple_content})"
+                print("TUPLE str:\n",tuple_str)
                 tokens = tokenize.generate_tokens(StringIO(tuple_str).readline)
                 strings = []
                 for toknum, tokval, _, _, _ in tokens:
                     if toknum == tokenize.STRING:
+                        print("STRING:",tokval)
                         if tokval.startswith(('f"', "f'", 'F"', "F'")):
                             tokval = tokval[1:]
                         elif tokval.startswith(('u"', "u'", 'U"', "U'")):

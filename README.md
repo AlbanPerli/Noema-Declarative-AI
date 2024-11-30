@@ -84,6 +84,7 @@ class WebSearch(Noesis):
                                 """)
         if knowledge_reflexion.known_answer:
             answer:Sentence = "Producing the answer."
+            return answer,None
         else:
             search_results = google_search(task.value)
             results:Information = f"The search results are: {search_results}"
@@ -166,6 +167,8 @@ elaborate = The current population of France is 66,589,968 as of Tuesday, Novemb
 
 # Usage:
 ## Installation
+
+Requires python <11.0,>= 3.6
 
 ```bash
 pip install Noema
