@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='Noema',
-    version='1.0.7',
+    version='1.0.8',
     description='Description of Noema',
     long_description=long_description,  # Inclure la description longue
     long_description_content_type='text/markdown',  # Spécifiez le format de la description (markdown ou rst)
