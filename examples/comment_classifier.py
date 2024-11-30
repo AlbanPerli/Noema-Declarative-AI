@@ -47,3 +47,7 @@ for comment in comment_analysis:
     print(comment["analysis"])
     print(comment["selected_label"])
     print("-"*50)
+    
+    
+print("LLM")
+print(subject)

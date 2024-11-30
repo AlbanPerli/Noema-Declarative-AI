@@ -57,7 +57,182 @@ The content *generated* by the LLM corresponding to `Reflexion` is the **Noema**
 2. Let you intercepts (constrained) generations
 3. Use it in standard python code
 
-# Full example:
+# Full examples:
+
+### Comment classification
+<details>
+  <summary>Code:</summary>
+
+```python
+from Noema import *
+
+# Create a new Subject
+subject = Subject("/path/to/your/model.gguf")
+
+# Create a way of thinking
+class CommentClassifier(Noesis):
+    
+    def __init__(self, comments, labels):
+        super().__init__()
+        self.comments = comments
+        self.labels = labels
+
+    def description(self):
+        """
+        You are a specialist in classifying comments. You have a list of comments and a list of labels.
+        You need to provide an analysis for each comment and select the most appropriate label.
+        """
+        comments_analysis = []
+        for c in self.comments:
+            comment:Information = f"This is the comment: '{c}'."
+            comment_analysis:Sentence = "Providing an analysis of the comment."
+            possible_labels:Information = f"Possible labels are: {self.labels}."
+            task:Information = "I will provide an analysis for each label."
+            reflexions = ""
+            for l in self.labels:
+                label:Information = f"Thinking about the label: {l}."
+                reflexion:Sentence = "Providing a deep reflexion about it."
+                consequence:Sentence = "Providing the consequence of the reflexion."
+                reflexions += "\n"+reflexion.value
+            selected_label:Word = "Providing the label name."
+            comment_analysis = {"comment": c, 
+                                "selected_label": selected_label.value,
+                                "analysis": reflexions}
+            comments_analysis.append(comment_analysis)
+            
+        return comments_analysis
+
+comment_list = ["I love this product", "I hate this product", "I am not sure about this product"]
+labels = ["positive", "negative", "neutral"]
+comment_analysis = CommentClassifier(comment_list, 
+                                     labels).constitute(subject, verbose=True)
+
+# Print the result
+for comment in comment_analysis:
+    print(comment["comment"])
+    print(comment["analysis"])
+    print(comment["selected_label"])
+    print("-"*50)
+```
+
+<details>
+  <summary>LLM output:</summary>
+
+```
+[INST]You are a specialist in classifying comments. You have a list of comments and a list of labels.
+You need to provide an analysis for each comment and select the most appropriate label.
+You are functionning in a loop of though. Your response can be multiline. Here is the reasonning you are currently executing:
+
+#COMMENT: This is the comment: '<blank>'.
+#COMMENT_ANALYSIS: Providing an analysis of the comment.
+#POSSIBLE_LABELS: Possible labels are: <blank>.
+#TASK: I will provide an analysis for each label.
+#LABEL: Thinking about the label: <blank>.
+#REFLEXION: Providing a deep reflexion about it.
+#CONSEQUENCE: Providing the consequence of the reflexion.
+#SELECTED_LABEL: Providing the label name.
+[/INST]
+
+#COMMENT:This is the comment: 'I love this product'.
+#COMMENT_ANALYSIS: The comment is a positive statement about a product.
+#POSSIBLE_LABELS:Possible labels are: ['positive', 'negative', 'neutral'].
+#TASK:I will provide an analysis for each label.
+#LABEL:Thinking about the label: positive.
+#REFLEXION: The comment is a positive statement, which means it expresses a favorable opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is likely to be a positive review or endorsement of the product.
+#LABEL:Thinking about the label: negative.
+#REFLEXION: The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is not a negative review or criticism of the product.
+#LABEL:Thinking about the label: neutral.
+#REFLEXION: The comment is not a neutral statement, as it does not express a lack of opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is not a neutral statement.
+#SELECTED_LABEL: positive
+#COMMENT:This is the comment: 'I hate this product'.
+#POSSIBLE_LABELS:Possible labels are: ['positive', 'negative', 'neutral'].
+#TASK:I will provide an analysis for each label.
+#LABEL:Thinking about the label: positive.
+#REFLEXION: The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product.
+#LABEL:Thinking about the label: negative.
+#REFLEXION: The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product.
+#LABEL:Thinking about the label: neutral.
+#REFLEXION: The comment is not a neutral statement, as it does not express a lack of opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is not a neutral statement.
+#SELECTED_LABEL: negative
+#COMMENT:This is the comment: 'I am not sure about this product'.
+#POSSIBLE_LABELS:Possible labels are: ['positive', 'negative', 'neutral'].
+#TASK:I will provide an analysis for each label.
+#LABEL:Thinking about the label: positive.
+#REFLEXION: The comment is not a positive statement, as it does not express a favorable opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is not a positive review or endorsement of the product.
+#LABEL:Thinking about the label: negative.
+#REFLEXION: The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is not a negative review or criticism of the product.
+#LABEL:Thinking about the label: neutral.
+#REFLEXION: The comment is a neutral statement, which means it expresses a lack of opinion or sentiment.
+#CONSEQUENCE: The consequence of this reflexion is that the comment is a neutral statement.
+#SELECTED_LABEL: neutral
+
+```
+
+</details>
+
+<details>
+  <summary>Verbose output:</summary>
+
+```
+comment = This is the comment: 'I love this product'. (INFORMATION)
+comment_analysis = The comment is a positive statement about a product. (Providing an analysis of the comment.)
+possible_labels = Possible labels are: ['positive', 'negative', 'neutral']. (INFORMATION)
+task = I will provide an analysis for each label. (INFORMATION)
+label = Thinking about the label: positive. (INFORMATION)
+reflexion = The comment is a positive statement, which means it expresses a favorable opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is likely to be a positive review or endorsement of the product. (Providing the consequence of the reflexion.)
+label = Thinking about the label: negative. (INFORMATION)
+reflexion = The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is not a negative review or criticism of the product. (Providing the consequence of the reflexion.)
+label = Thinking about the label: neutral. (INFORMATION)
+reflexion = The comment is not a neutral statement, as it does not express a lack of opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is not a neutral statement. (Providing the consequence of the reflexion.)
+selected_label = positive (Providing the label name.)
+comment = This is the comment: 'I hate this product'. (INFORMATION)
+possible_labels = Possible labels are: ['positive', 'negative', 'neutral']. (INFORMATION)
+task = I will provide an analysis for each label. (INFORMATION)
+label = Thinking about the label: positive. (INFORMATION)
+reflexion = The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product. (Providing the consequence of the reflexion.)
+label = Thinking about the label: negative. (INFORMATION)
+reflexion = The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product. (Providing the consequence of the reflexion.)
+label = Thinking about the label: neutral. (INFORMATION)
+reflexion = The comment is not a neutral statement, as it does not express a lack of opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is not a neutral statement. (Providing the consequence of the reflexion.)
+selected_label = negative (Providing the label name.)
+comment = This is the comment: 'I am not sure about this product'. (INFORMATION)
+possible_labels = Possible labels are: ['positive', 'negative', 'neutral']. (INFORMATION)
+task = I will provide an analysis for each label. (INFORMATION)
+label = Thinking about the label: positive. (INFORMATION)
+reflexion = The comment is not a positive statement, as it does not express a favorable opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is not a positive review or endorsement of the product. (Providing the consequence of the reflexion.)
+label = Thinking about the label: negative. (INFORMATION)
+reflexion = The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is not a negative review or criticism of the product. (Providing the consequence of the reflexion.)
+label = Thinking about the label: neutral. (INFORMATION)
+reflexion = The comment is a neutral statement, which means it expresses a lack of opinion or sentiment. (Providing a deep reflexion about it.)
+consequence = The consequence of this reflexion is that the comment is a neutral statement. (Providing the consequence of the reflexion.)
+selected_label = neutral (Providing the label name.)
+```
+
+</details>
+</details>
+
+
+### Web search
+
+<details>
+  <summary>Code:</summary>
+
 ```python
 from datetime import date
 from Noema import *
@@ -104,7 +279,6 @@ print(answer)
 print(source)
 # 'https://www.worldometers.info/world-population/france-population/'
 ```
-
 
 <details>
   <summary>LLM output:</summary>
@@ -163,7 +337,7 @@ elaborate = The current population of France is 66,589,968 as of Tuesday, Novemb
 ```
 
 </details>
-
+</details>
 
 # Usage:
 ## Installation
