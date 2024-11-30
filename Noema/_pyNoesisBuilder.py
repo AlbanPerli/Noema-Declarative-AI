@@ -46,14 +46,20 @@ class PyNoesisBuilder:
             line = line.strip()
             if i in ref_model_by_line:
                 model = ref_model_by_line[i]
-                noesis += f"{model.display_var()} {model.value[0]}\n"
+                value_str = model.value[0]
+                value_str = re.sub(r"\{[a-zA-Z0-9_]+\}", "<blank>", value_str)
+                noesis += f"{model.display_var()} {value_str}\n"
             elif re.match(self.pattern, line):
                 model = self.extract_and_evaluate(line,context)
                 if model.annotation != None:
                     pass
                 if model.value[-1] not in ['.', '!', '?']:
                     model.value += '.'
-                noesis += f"{model.display_var()} {model.value}\n"
+
+                value_str = model.value
+                # il peut aussi y avoir un point
+                value_str = re.sub(r"\{[a-zA-Z0-9_\.]+\}", "<blank>", value_str)
+                noesis += f"{model.display_var()} {value_str}\n"
                 ref_model_by_line[i] = model
                 
             # else:
@@ -147,12 +153,10 @@ class PyNoesisBuilder:
             def extract_tuple_strings(self, tuple_content):
                 tuple_content = tuple_content.replace('f"', '"').replace("f'", "'")
                 tuple_str = f"({tuple_content})"
-                print("TUPLE str:\n",tuple_str)
                 tokens = tokenize.generate_tokens(StringIO(tuple_str).readline)
                 strings = []
                 for toknum, tokval, _, _, _ in tokens:
                     if toknum == tokenize.STRING:
-                        print("STRING:",tokval)
                         if tokval.startswith(('f"', "f'", 'F"', "F'")):
                             tokval = tokval[1:]
                         elif tokval.startswith(('u"', "u'", 'U"', "U'")):

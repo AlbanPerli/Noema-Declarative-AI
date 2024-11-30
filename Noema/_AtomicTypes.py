@@ -100,6 +100,7 @@ class Fill(AtomicGenerator):
                 if type_name in globals():
                     instance = globals()[type_name]()
                     res = None
+                    print(type_name)
                     if type(instance) is IntList:
                         llm += capture(G.arrayOf(G.positive_num()), name="response")
                         res = llm["response"]
@@ -147,7 +148,7 @@ class Fill(AtomicGenerator):
                         res = llm["response"]
                         if var_name:
                             elements[var_name] = res
-                    elif issubclass(type(instance), CustomGenerator):   
+                    elif issubclass(type(instance), CustomGenerator):  
                         llm += gen(name="response", stop=instance.stops, regex=instance.regex) + "\n"
                         res = llm["response"]
                         if var_name:
