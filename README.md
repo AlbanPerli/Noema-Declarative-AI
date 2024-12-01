@@ -7,7 +7,7 @@
 
 # Background:
 
-**Noema is an application of the [*declarative* programming](https://en.wikipedia.org/wiki/Declarative_programming) paradigm to a langage model.** 
+**Noema is an application of the [*declarative* programming](https://en.wikipedia.org/wiki/Declarative_programming) paradigm to a language model.** 
 
 With Noema, you can control the model and choose the path it will follow. This framework aims to enable developpers to use **LLM as a though interpretor**, not as a source of truth.
 
