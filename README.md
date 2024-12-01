@@ -5,6 +5,10 @@
 
 **Noema is a new way of programming, using seamless integration between python and llm's generations.**
 
+<div align="center">
+  <img src="noema.gif" alt="Noema Demo">
+</div>
+
 # Background:
 
 **Noema is an application of the [*declarative* programming](https://en.wikipedia.org/wiki/Declarative_programming) paradigm to a language model.** 
