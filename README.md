@@ -346,8 +346,6 @@ elaborate = The current population of France is 66,589,968 as of Tuesday, Novemb
 # Usage:
 ## Installation
 
-Requires python <11.0,>= 3.6
-
 ```bash
 pip install Noema
 ```
