@@ -1,7 +1,7 @@
 from Noema import *
 
 # Create a subject (LLM)
-Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
+Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf", verbose=True) # Llama cpp model
 
 # Create a way of thinking
 class SimpleWayOfThinking:

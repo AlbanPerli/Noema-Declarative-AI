@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='Noema',
-    version='1.1.0',
+    version='1.1.1',
     description='Description of Noema',
     long_description=long_description,  # Inclure la description longue
     long_description_content_type='text/markdown',  # Spécifiez le format de la description (markdown ou rst)
@@ -15,12 +15,13 @@ setup(
     url='https://github.com/AlbanPerli/Noema-Declarative-AI',
     packages=find_packages(),
     install_requires=[
-        'guidance',
+        'guidance==0.1.15',
+        'varname'
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
 )
