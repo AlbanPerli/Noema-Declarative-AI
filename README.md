@@ -233,6 +233,11 @@ You always produce a deep analysis of the comment.
 ## Generators
 Generators are used to generate content from the subject (LLM) through the noesis (the task description).
 
+Generated value always have 3 properties:
+- var_name.value -> The generated value
+- var_name.noesis -> The instruction
+- var_name.noema -> The generated value
+
 They always produce the corresponding python type.
 
 ### Simple Generators
