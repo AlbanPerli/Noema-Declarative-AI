@@ -1,53 +1,25 @@
 from Noema import *
 
 # Create a new Subject
-subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
+Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
 
-# Create a way of thinking
-class CommentClassifier(Noesis):
-    
-    def __init__(self, comments, labels):
-        super().__init__()
-        self.comments = comments
-        self.labels = labels
+@Noema
+def comment_evaluation(comment):
+  """
+  You are a specialist of comment analysis.
+  You always produce a deep analysis of the comment.
+  """
+  comment_to_analyse = Information(f"{comment}")
+  specialists = ["Psychologist", "Product manager", "Satisfaction manager"]
+  analyse_by_specialists = {}
+  for specialist in specialists:
+    analysis = Sentence(f"Analysing the comment as a {specialist}")
+    analyse_by_specialists[specialist] = analysis.value
+  
+  synthesis = Paragraph("Providing a synthesis of the analysis.")
+  return synthesis.value, analyse_by_specialists
 
-    def description(self):
-        """
-        You are a specialist in classifying comments. You have a list of comments and a list of labels.
-        You need to provide an analysis for each comment and select the most appropriate label.
-        """
-        comments_analysis = []
-        for c in self.comments:
-            comment:Information = f"This is the comment: '{c}'."
-            comment_analysis:Sentence = "Providing an analysis of the comment."
-            possible_labels:Information = f"Possible labels are: {self.labels}."
-            task:Information = "I will provide an analysis for each label."
-            reflexions = ""
-            for l in self.labels:
-                label:Information = f"Thinking about the label: {l}."
-                reflexion:Sentence = "Providing a deep reflexion about it."
-                consequence:Sentence = "Providing the consequence of the reflexion."
-                reflexions += "\n"+reflexion.value
-            selected_label:Word = "Providing the label name."
-            comment_analysis = {"comment": c, 
-                                "selected_label": selected_label.value,
-                                "analysis": reflexions}
-            comments_analysis.append(comment_analysis)
-            
-        return comments_analysis
+synthesis, abs = comment_evaluation("This llm is very good!")
 
-comment_list = ["I love this product", "I hate this product", "I am not sure about this product"]
-labels = ["positive", "negative", "neutral"]
-comment_analysis = CommentClassifier(comment_list, 
-                                     labels).constitute(subject, verbose=True)
-
-# Print the result
-for comment in comment_analysis:
-    print(comment["comment"])
-    print(comment["analysis"])
-    print(comment["selected_label"])
-    print("-"*50)
-    
-    
-print("LLM")
-print(subject)
+print(synthesis)
+print(Subject.shared().noema())

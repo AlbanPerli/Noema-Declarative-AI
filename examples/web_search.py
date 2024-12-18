@@ -2,7 +2,7 @@ from datetime import date
 from Noema import *
 from capabilities import *
 
-class WebSearch(Noesis):
+class WebSearch(Noema):
     
     def __init__(self,request):
         super().__init__()
@@ -35,7 +35,7 @@ class WebSearch(Noesis):
             elaborate:Paragraph = "Using the information of the selected result, I elaborate the answer."
             return elaborate.value, manage_results.link
             
-subject = Subject("path/to/your/model.gguf")
+subject = Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
 answer,source = WebSearch("What is the population of France?").constitute(subject, verbose=True)
 
 print(answer) 

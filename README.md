@@ -3,20 +3,102 @@
 </p>
 
 
-**Noema is a new way of programming, using seamless integration between python and llm's generations.**
+<div align="center"> 
+<span style="font-size: 29px;">Seamless integration between python and llm's generations.</span>
+<p><span style="font-size: 29px;">
+With Noema, you can control the model and choose the path it will follow. 
+<br>This framework aims to enable developpers to use **LLM as a though interpretor**, not as a source of truth.
 
-<div align="center">
-  <img src="noema.gif" alt="Noema Demo">
+Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidance](https://github.com/guidance-ai/guidance)'s shoulders.
+</span></p>
 </div>
+
+## Installation
+
+```bash
+pip install Noema
+```
+
+
+# Basic:
+```python
+# Create a subject (LLM)
+Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
+
+# Create a way of thinking
+class SimpleWayOfThinking:
+    
+    def __init__(self, task):
+        super().__init__()
+        self.task = task
+        
+    @Noema
+    def think(self):
+        """
+        You are a simple thinker. You have a task to perform.
+        Always looking for the best way to perform it.
+        """
+        povs = []
+        task = Information(f"{self.task}") # inject information to the LLM
+        for i in range(4):
+            step_nb = i + 1
+            reflexion = Sentence("Providing a reflexion about the task.", step_nb)
+            consequence = Sentence("Providing the consequence of the reflexion.", step_nb)
+            evaluate = Sentence("Evaluating the consequence.", step_nb)
+            point_of_view = Sentence(f"Providing a point of view about the task different than {povs}", step_nb)
+            point_of_view_qualification = Word(f"Qualifying the point of view, must choose a word different of: {povs}", step_nb)
+            povs.append(point_of_view_qualification.value)
+            creativitity_level = Float(f"How creative is this point of view: {povs[-1]}. (Between 0-10)", step_nb)
+            if creativitity_level.value < 8.0:
+                important = Information("I need to be more creative!")
+        conclusion = Paragraph("Providing a conclusion which is a synthesis of the previous steps.")
+        return conclusion.value # return the conclusion value
+    
+ 
+swot = SimpleWayOfThinking("How to write a good iOS application?")
+conclusion = swot.think()
+print(conclusion)
+```
+
+<details>
+  <summary>LLM output:</summary>
+
+```
+[INST]
+You are a simple thinker. You have a task to perform.
+Always looking for the best way to perform it.        
+
+#TASK : f'{self.task}'
+#REFLEXION : Providing a reflexion about the task. (Response format: a sentence)
+#CONSEQUENCE : Providing the consequence of the reflexion. (Response format: a sentence)
+#EVALUATE : Evaluating the consequence. (Response format: a sentence)
+#POINT_OF_VIEW : f'Providing a point of view about the task different than {povs}' (Response format: a sentence)
+#IMPORTANT : I need to be more creative!
+#CONCLUSION : Providing a conclusion which is a synthesis of the previous steps. (Response format: a paragraph)
+[/INST]
+
+#TASK: How to write a good iOS application?
+#REFLEXION_1: Writing an iOS app requires balancing user experience with technical feasibility, which can be daunting without a structured approach.
+#CONSEQUENCE_1: Without a clear roadmap, developers might overlook critical aspects like usability or performance optimization, leading to a subpar product.
+#EVALUATE_1: The consequence highlights the necessity for meticulous planning and iterative testing to ensure both functionality and user satisfaction.
+#POINT_OF_VIEW_1: Instead of focusing solely on coding, consider adopting a design-first approach where user stories guide the development process, ensuring alignment between vision and execution.
+#POINT_OF_VIEW_QUALIFICATION_1:  Designer 
+#CREATIVITITY_LEVEL_1: 7.5
+#IMPORTANT: I need to be more creative!
+#REFLEXION_2: The challenge lies in translating abstract design concepts into tangible iOS applications, necessitating a deep understanding of both user needs and platform capabilities.
+#CONSEQUENCE_2: Ignoring user feedback during development phases could result in an application that fails to meet market expectations and user expectations, potentially causing significant financial losses and damage to brand reputation.
+#EVALUATE_2: Ignoring user feedback during development phases could lead to a product that fails to resonate with its target audience, undermining both commercial success and user trust.
+#POINT_OF_VIEW_2: From a developer's perspective, integrating innovative features while maintaining robustness requires a blend of creativity and technical expertise, ensuring seamless integration of cutting-edge functionalities without compromising stability.
+#POINT_OF_VIEW_QUALIFICATION_2:  Architect 
+#CREATIVITITY_LEVEL_2: 8.2
+#CONCLUSION: Crafting a successful iOS application necessitates a multifaceted approach that harmonizes creativity with rigorous planning and iterative refinement. By adopting a design-first methodology and integrating user feedback throughout development, developers can navigate the complexities of balancing innovation with practicality, ultimately delivering applications that not only meet but exceed user expectations, thereby fostering both user satisfaction and commercial success. Emphasizing creativity alongside meticulous planning ensures that each aspect of the development process contributes meaningfully to the final product's success.
+```
+
+</details>
 
 # Background:
 
 **Noema is an application of the [*declarative* programming](https://en.wikipedia.org/wiki/Declarative_programming) paradigm to a language model.** 
-
-With Noema, you can control the model and choose the path it will follow. This framework aims to enable developpers to use **LLM as a though interpretor**, not as a source of truth.
-
-Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidance](https://github.com/guidance-ai/guidance)'s shoulders.
-
 
 - [Concept](#Concept)
 - [Installation](#installation)
@@ -61,295 +143,6 @@ The content *generated* by the LLM corresponding to `Reflexion` is the **Noema**
 2. Let you intercepts (constrained) generations
 3. Use it in standard python code
 
-# Full examples:
-
-### Comment classification
-<details>
-  <summary>Code:</summary>
-
-```python
-from Noema import *
-
-# Create a new Subject
-subject = Subject("/path/to/your/model.gguf")
-
-# Create a way of thinking
-class CommentClassifier(Noesis):
-    
-    def __init__(self, comments, labels):
-        super().__init__()
-        self.comments = comments
-        self.labels = labels
-
-    def description(self):
-        """
-        You are a specialist in classifying comments. You have a list of comments and a list of labels.
-        You need to provide an analysis for each comment and select the most appropriate label.
-        """
-        comments_analysis = []
-        for c in self.comments:
-            comment:Information = f"This is the comment: '{c}'."
-            comment_analysis:Sentence = "Providing an analysis of the comment."
-            possible_labels:Information = f"Possible labels are: {self.labels}."
-            task:Information = "I will provide an analysis for each label."
-            reflexions = ""
-            for l in self.labels:
-                label:Information = f"Thinking about the label: {l}."
-                reflexion:Sentence = "Providing a deep reflexion about it."
-                consequence:Sentence = "Providing the consequence of the reflexion."
-                reflexions += "\n"+reflexion.value
-            selected_label:Word = "Providing the label name."
-            comment_analysis = {"comment": c, 
-                                "selected_label": selected_label.value,
-                                "analysis": reflexions}
-            comments_analysis.append(comment_analysis)
-            
-        return comments_analysis
-
-comment_list = ["I love this product", "I hate this product", "I am not sure about this product"]
-labels = ["positive", "negative", "neutral"]
-comment_analysis = CommentClassifier(comment_list, 
-                                     labels).constitute(subject, verbose=True)
-
-# Print the result
-for comment in comment_analysis:
-    print(comment["comment"])
-    print(comment["analysis"])
-    print(comment["selected_label"])
-    print("-"*50)
-```
-
-<details>
-  <summary>LLM output:</summary>
-
-```
-[INST]You are a specialist in classifying comments. You have a list of comments and a list of labels.
-You need to provide an analysis for each comment and select the most appropriate label.
-You are functionning in a loop of though. Your response can be multiline. Here is the reasonning you are currently executing:
-
-#COMMENT: This is the comment: '<blank>'.
-#COMMENT_ANALYSIS: Providing an analysis of the comment.
-#POSSIBLE_LABELS: Possible labels are: <blank>.
-#TASK: I will provide an analysis for each label.
-#LABEL: Thinking about the label: <blank>.
-#REFLEXION: Providing a deep reflexion about it.
-#CONSEQUENCE: Providing the consequence of the reflexion.
-#SELECTED_LABEL: Providing the label name.
-[/INST]
-
-#COMMENT:This is the comment: 'I love this product'.
-#COMMENT_ANALYSIS: The comment is a positive statement about a product.
-#POSSIBLE_LABELS:Possible labels are: ['positive', 'negative', 'neutral'].
-#TASK:I will provide an analysis for each label.
-#LABEL:Thinking about the label: positive.
-#REFLEXION: The comment is a positive statement, which means it expresses a favorable opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is likely to be a positive review or endorsement of the product.
-#LABEL:Thinking about the label: negative.
-#REFLEXION: The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is not a negative review or criticism of the product.
-#LABEL:Thinking about the label: neutral.
-#REFLEXION: The comment is not a neutral statement, as it does not express a lack of opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is not a neutral statement.
-#SELECTED_LABEL: positive
-#COMMENT:This is the comment: 'I hate this product'.
-#POSSIBLE_LABELS:Possible labels are: ['positive', 'negative', 'neutral'].
-#TASK:I will provide an analysis for each label.
-#LABEL:Thinking about the label: positive.
-#REFLEXION: The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product.
-#LABEL:Thinking about the label: negative.
-#REFLEXION: The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product.
-#LABEL:Thinking about the label: neutral.
-#REFLEXION: The comment is not a neutral statement, as it does not express a lack of opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is not a neutral statement.
-#SELECTED_LABEL: negative
-#COMMENT:This is the comment: 'I am not sure about this product'.
-#POSSIBLE_LABELS:Possible labels are: ['positive', 'negative', 'neutral'].
-#TASK:I will provide an analysis for each label.
-#LABEL:Thinking about the label: positive.
-#REFLEXION: The comment is not a positive statement, as it does not express a favorable opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is not a positive review or endorsement of the product.
-#LABEL:Thinking about the label: negative.
-#REFLEXION: The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is not a negative review or criticism of the product.
-#LABEL:Thinking about the label: neutral.
-#REFLEXION: The comment is a neutral statement, which means it expresses a lack of opinion or sentiment.
-#CONSEQUENCE: The consequence of this reflexion is that the comment is a neutral statement.
-#SELECTED_LABEL: neutral
-
-```
-
-</details>
-
-<details>
-  <summary>Verbose output:</summary>
-
-```
-comment = This is the comment: 'I love this product'. (INFORMATION)
-comment_analysis = The comment is a positive statement about a product. (Providing an analysis of the comment.)
-possible_labels = Possible labels are: ['positive', 'negative', 'neutral']. (INFORMATION)
-task = I will provide an analysis for each label. (INFORMATION)
-label = Thinking about the label: positive. (INFORMATION)
-reflexion = The comment is a positive statement, which means it expresses a favorable opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is likely to be a positive review or endorsement of the product. (Providing the consequence of the reflexion.)
-label = Thinking about the label: negative. (INFORMATION)
-reflexion = The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is not a negative review or criticism of the product. (Providing the consequence of the reflexion.)
-label = Thinking about the label: neutral. (INFORMATION)
-reflexion = The comment is not a neutral statement, as it does not express a lack of opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is not a neutral statement. (Providing the consequence of the reflexion.)
-selected_label = positive (Providing the label name.)
-comment = This is the comment: 'I hate this product'. (INFORMATION)
-possible_labels = Possible labels are: ['positive', 'negative', 'neutral']. (INFORMATION)
-task = I will provide an analysis for each label. (INFORMATION)
-label = Thinking about the label: positive. (INFORMATION)
-reflexion = The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product. (Providing the consequence of the reflexion.)
-label = Thinking about the label: negative. (INFORMATION)
-reflexion = The comment is a negative statement, which means it expresses a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is likely to be a negative review or criticism of the product. (Providing the consequence of the reflexion.)
-label = Thinking about the label: neutral. (INFORMATION)
-reflexion = The comment is not a neutral statement, as it does not express a lack of opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is not a neutral statement. (Providing the consequence of the reflexion.)
-selected_label = negative (Providing the label name.)
-comment = This is the comment: 'I am not sure about this product'. (INFORMATION)
-possible_labels = Possible labels are: ['positive', 'negative', 'neutral']. (INFORMATION)
-task = I will provide an analysis for each label. (INFORMATION)
-label = Thinking about the label: positive. (INFORMATION)
-reflexion = The comment is not a positive statement, as it does not express a favorable opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is not a positive review or endorsement of the product. (Providing the consequence of the reflexion.)
-label = Thinking about the label: negative. (INFORMATION)
-reflexion = The comment is not a negative statement, as it does not express a unfavorable opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is not a negative review or criticism of the product. (Providing the consequence of the reflexion.)
-label = Thinking about the label: neutral. (INFORMATION)
-reflexion = The comment is a neutral statement, which means it expresses a lack of opinion or sentiment. (Providing a deep reflexion about it.)
-consequence = The consequence of this reflexion is that the comment is a neutral statement. (Providing the consequence of the reflexion.)
-selected_label = neutral (Providing the label name.)
-```
-
-</details>
-</details>
-
-
-### Web search
-
-<details>
-  <summary>Code:</summary>
-
-```python
-from datetime import date
-from Noema import *
-from capabilities import *
-
-class WebSearch(Noesis):
-    
-    def __init__(self,request):
-        super().__init__()
-        self.request = request
-    
-    def description(self):
-        """
-        You are a specialist in information retrieval.
-        Always looking for the best information to answer a question.
-        If you don't know the answer, you are able to find it by searching on the web.
-        """
-        task:Information = f"{self.request}"
-        current_date = date.today().strftime("%d-%m-%Y")
-        current_date_info:Information = f"The current date is: {current_date}"
-        knowledge_reflexion:Fill = ("Thinking about the task.",
-                                f"""I have to think about the task: '{task.value}'.
-                                Based on the date and my knowledge, can I Know the answer? {Bool:known_answer}.
-                                """)
-        if knowledge_reflexion.known_answer:
-            answer:Sentence = "Producing the answer."
-            return answer,None
-        else:
-            search_results = google_search(task.value)
-            results:Information = f"The search results are: {search_results}"
-            manage_results:Fill = ("Managing the search results.",
-                                    f"""Selecting the best result: {SubString:infos}.
-                                    Extracting the best link: {SubString:link}
-                                    Producing the answer based on the information: {Sentence:answer}.
-                                    """)
-            elaborate:Paragraph = "Using the information of the selected result, I elaborate the answer."
-            return elaborate.value, manage_results.link
-            
-subject = Subject("path/to/your/model.gguf")
-answer,source = WebSearch("What is the population of France?").constitute(subject, verbose=True)
-
-print(answer) 
-# The current population of France is 66,589,408 as of Sunday, November 24, 2024, based on Worldometer's elaboration of the latest United Nations data1.
-print(source)
-# 'https://www.worldometers.info/world-population/france-population/'
-```
-
-<details>
-  <summary>LLM output:</summary>
-
-```
-[INST]You are a specialist in information retrieval.
-Always looking for the best information to answer a question.
-If you don't know the answer, you are able to find it by searching on the web.
-You are functionning in a loop of though. Your response can be multiline. Here is the reasonning you are currently executing:
-
-#TASK: {self.request}.
-#CURRENT_DATE: The current date is: {date}.
-#KNOWLEDGE_REFLEXION: Thinking about the task.
-#ANSWER: Producing the answer.
-#RESULTS: The search results are: {search_results}.
-#MANAGE_RESULTS: Managing the search results.
-#ELABORATE: Using the information of the selected result, I elaborate the answer.
-[/INST]
-
-#TASK:What is the population of France?
-#CURRENT_DATE:The current date is: 2024-11-26
-#KNOWLEDGE_REFLEXION: I have to think about the task: 'What is the population of France?'.
-                        Based on the date and my knowledge, can I Know the answer? no.
-                        
-#RESULTS:The search results are: [{'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."}, {'title': 'Demographics of France', 'link': 'https://en.wikipedia.org/wiki/Demographics_of_France', 'description': 'As of 1 January 2021, 66,142,961 people lived in Metropolitan France, while 2,230,472 lived in overseas France, for a total of 68,373,433 inhabitants in the\xa0...'}, {'title': 'Total population in France 1982-2024 - Demographics', 'link': 'https://www.statista.com/statistics/459939/population-france/', 'description': '12 sept. 2024 — The total population of France has been increasing for years now, exceeding 68 million inhabitants in 2024. France is the second most populous\xa0...'}, {'title': 'Population Clock - France', 'link': 'https://www.census.gov/popclock/world/fr', 'description': 'France · 68.4M · 106.8 · 96.4 · 1.9 · Annual Population Estimates · Annual Population Estimates · Annual Population Estimates. A Closer Look.'}, {'title': 'France Population 1950-2024', 'link': 'https://www.macrotrends.net/global-metrics/countries/fra/france/population', 'description': 'The current population of France in 2024 is 64,881,830, a 0.19% increase from 2023. The population of France in 2023 was 64,756,584, a 0.2% increase from 2022.\xa0...'}, {'title': 'France Population', 'link': 'https://tradingeconomics.com/france/population', 'description': 'The total population in France was estimated at 68.1 million people in 2023, according to the latest census figures and projections from Trading Economics.'}, {'title': 'Population estimates', 'link': 'https://www.insee.fr/en/metadonnees/source/serie/s1169', 'description': 'On 1st January 2024, the population of France was 68.4 million. In 2023, the population increased by 0.3%.In 2023, 678,000 babies were born in France.'}, {'title': 'France - total population 2019-2029', 'link': 'https://www.statista.com/statistics/263743/total-population-of-france/', 'description': '4 juil. 2024 — In 2022, the total population of France amounted to 65.72 million people. See the population of Italy for comparison.'}, {'title': 'France', 'link': 'https://en.wikipedia.org/wiki/France', 'description': 'Its eighteen integral regions (five of which are overseas) span a combined area of 643,801 km2 (248,573 sq mi) and have a total population of 68.4 million as of\xa0...'}, {'title': 'Demography - Population at the beginning of the month - ...', 'link': 'https://www.insee.fr/en/statistiques/serie/000436387', 'description': '31 oct. 2024 — tableauDemography - Population at the beginning of the month - Metropolitan France ; 2020, December, 65,497 ; 2020, November, 65,490 ; 2020\xa0...'}]
-#MANAGE_RESULTS: Selecting the best result: {'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."},.
-                            Extracting the best link: 'https://www.worldometers.info/world-population/france-population/'
-                            Producing the answer based on the information: The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1..
-                            
-#ELABORATE: The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1.
-
-```
-
-</details>
-
-<details>
-  <summary>Verbose output:</summary>
-
-```
-task = What is the population of France? (INFORMATION)
-
-current_date = The current date is: 2024-11-26 (INFORMATION)
-
-knowledge_reflexion = I have to think about the task: 'What is the population of France?'.
-                        Based on the date and my knowledge, can I Know the answer? no.
-                         (Thinking about the task.)
-
-results = The search results are: [{'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."}, {'title': 'Demographics of France', 'link': 'https://en.wikipedia.org/wiki/Demographics_of_France', 'description': 'As of 1 January 2021, 66,142,961 people lived in Metropolitan France, while 2,230,472 lived in overseas France, for a total of 68,373,433 inhabitants in the\xa0...'}, {'title': 'Total population in France 1982-2024 - Demographics', 'link': 'https://www.statista.com/statistics/459939/population-france/', 'description': '12 sept. 2024 — The total population of France has been increasing for years now, exceeding 68 million inhabitants in 2024. France is the second most populous\xa0...'}, {'title': 'Population Clock - France', 'link': 'https://www.census.gov/popclock/world/fr', 'description': 'France · 68.4M · 106.8 · 96.4 · 1.9 · Annual Population Estimates · Annual Population Estimates · Annual Population Estimates. A Closer Look.'}, {'title': 'France Population 1950-2024', 'link': 'https://www.macrotrends.net/global-metrics/countries/fra/france/population', 'description': 'The current population of France in 2024 is 64,881,830, a 0.19% increase from 2023. The population of France in 2023 was 64,756,584, a 0.2% increase from 2022.\xa0...'}, {'title': 'France Population', 'link': 'https://tradingeconomics.com/france/population', 'description': 'The total population in France was estimated at 68.1 million people in 2023, according to the latest census figures and projections from Trading Economics.'}, {'title': 'Population estimates', 'link': 'https://www.insee.fr/en/metadonnees/source/serie/s1169', 'description': 'On 1st January 2024, the population of France was 68.4 million. In 2023, the population increased by 0.3%.In 2023, 678,000 babies were born in France.'}, {'title': 'France - total population 2019-2029', 'link': 'https://www.statista.com/statistics/263743/total-population-of-france/', 'description': '4 juil. 2024 — In 2022, the total population of France amounted to 65.72 million people. See the population of Italy for comparison.'}, {'title': 'France', 'link': 'https://en.wikipedia.org/wiki/France', 'description': 'Its eighteen integral regions (five of which are overseas) span a combined area of 643,801 km2 (248,573 sq mi) and have a total population of 68.4 million as of\xa0...'}, {'title': 'Demography - Population at the beginning of the month - ...', 'link': 'https://www.insee.fr/en/statistiques/serie/000436387', 'description': '31 oct. 2024 — tableauDemography - Population at the beginning of the month - Metropolitan France ; 2020, December, 65,497 ; 2020, November, 65,490 ; 2020\xa0...'}] (INFORMATION)
-
-manage_results = Selecting the best result: {'title': 'France Population (2024)', 'link': 'https://www.worldometers.info/world-population/france-population/', 'description': "The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1."},.
-                            Extracting the best link: 'https://www.worldometers.info/world-population/france-population/'
-                            Producing the answer based on the information: The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1..
-                             (Managing the search results.)
-
-elaborate = The current population of France is 66,589,968 as of Tuesday, November 26, 2024, based on Worldometer's elaboration of the latest United Nations data1.(Using the information of the selected result, I elaborate the answer.)
-```
-
-</details>
-</details>
-
-# Usage:
-## Installation
-
-```bash
-pip install Noema
-```
-
 ## Features
 
 ### Create the Subject
@@ -357,52 +150,85 @@ pip install Noema
 ```python
 from Noema import *
 
-subject = Subject("path/to/your/model.gguf") # Full Compatibiliy with LLamaCPP.
+Subject("path/to/your/model.gguf", verbose=True) # Full Compatibiliy with LLamaCPP.
 ```
 
 ### Create a way of thinking: 
 
-#### 1. Create a class that inherits from Noesis
-#### 2. Add a method named `description`
-#### 3. Add a system prompt using the python docstring
-#### 4. Write python code
-
-
+#### 1. Add @Noema decorator to a function/method.
 ```python
 from Noema import *
 
-subject = Subject("path/to/your/model.gguf")
+Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
 
-class WayOfThinking(Noesis):
-    
-    def description(self):
-        """
-        Here write the system prompt, describing the role/task of the system.
-        In the same way as for a classical prompt, you can use multiline.
-        """
-        task_list = ["Task description 1", "Task description 2"]
-        reflexions = []
-        for task_description in task_list:
-            task:Information = f"{task_description}" # Insert description
-            thought:Fill = ("""Thinking about the task.
-                            Here you can write the different steps of the thought process.
-                            1. Step 1: I do this.
-                            2. Step 2: I do that.
-                            3. Step 3: I do this other thing.
-                            """,
-                            f"""Step 1: {Sentence:step1}
-                            Step 2: {Sentence:step2}
-                            Step 3: {Sentence:step3}
-                            """)
-            print(thought.step1) # easy access to the though variables (step1,step2,step3)
-            reflexion:Paragraph = "Here you can write a reflexion about the thought process."
-            reflexions.append(reflexion.value)
-        return reflexions
-
-wot = WayOfThinking()
-reflexions = wot.constitute(subject)
-print(reflexions) # contains the reflexions produced by the LLM
+@Noema
+def comment_evaluation(comment):
+  pass
 ```
+#### 2. Add a system prompt using the python docstring
+```python
+from Noema import *
+
+@Noema
+def comment_evaluation(comment):
+  """
+  You are a specialist of comment analysis.
+  You always produce a deep analysis of the comment.
+  """
+```
+#### 3. Write python code
+```python
+from Noema import *
+
+@Noema
+def comment_evaluation(comment):
+  """
+  You are a specialist of comment analysis.
+  You always produce a deep analysis of the comment.
+  """
+  comment_to_analyse = Information(f"{comment}")
+  specialists = ["Psychologist", "Product manager", "Satisfaction manager"]
+  analyse_by_specialists = {}
+  for specialist in specialists:
+    analysis = Sentence(f"Analysing the comment as a {specialist}")
+    analyse_by_specialists[specialist] = analysis.value
+  
+  synthesis = Paragraph("Providing a synthesis of the analysis.")
+  return synthesis.value, analyse_by_specialists
+
+Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
+
+synthesis, abs = comment_evaluation("This llm is very good at following instructions!")
+
+print(synthesis)
+```
+
+<details>
+  <summary>LLM output:</summary>
+[INST]
+
+You are a specialist of comment analysis.
+You always produce a deep analysis of the comment.
+  
+
+#COMMENT_TO_ANALYSE : f'{comment}'
+
+#ANALYSIS : f'Analysing the comment as a {specialist}' (Response format: a sentence)
+
+#SYNTHESIS : Providing a synthesis of the analysis. (Response format: a paragraph)
+
+[/INST]
+
+#COMMENT_TO_ANALYSE: This llm is very good!
+
+#ANALYSIS: The comment expresses a positive sentiment towards the LLM's capabilities, suggesting satisfaction with its performance and possibly indicating a belief in its psychological sophistication or understanding of human interaction nuances.
+
+#ANALYSIS: As a product manager, this feedback highlights the importance of user satisfaction and perceived intelligence in LLM evaluations, indicating a focus on enhancing user experience through advanced functionalities and addressing potential psychological aspects beyond mere functionality.
+
+#ANALYSIS: The comment reflects high user satisfaction with the LLM's performance, emphasizing its perceived intelligence and nuanced understanding, which are critical factors for product managers aiming to meet user expectations and foster trust through advanced technological capabilities.
+
+#SYNTHESIS: The comment underscores a significant positive reception of the LLM, highlighting its perceived intelligence and nuanced understanding beyond basic functionality. This feedback is crucial for product managers as it underscores the importance of aligning technological advancements with user expectations for psychological satisfaction and trust-building. Addressing these aspects could enhance user engagement and satisfaction, positioning the LLM as a valuable asset in meeting evolving technological and psychological needs within its applications. Future iterations should focus on maintaining and potentially elevating these perceived qualities to further solidify its role as a sophisticated tool in diverse user contexts.
+</details>
 
 ## Generators
 Generators are used to generate content from the subject (LLM) through the noesis (the task description).
@@ -413,90 +239,26 @@ They always produce the corresponding python type.
 
 | Noema Type | Python Type  | Usage |
 |-----------|-----------|-----------|
-| Int  | int  | `number:Int = "Give me a number between 0 and 10"`  |
-| Float  | float  | `number:Float = "Give me a number between 0.1 and 0.7"`  |
-| Bool  | bool  | `truth:Bool = "Are local LLMs better than online LLMs?"`  |
-| Word  | str  | `better:Word = "Which instruct LLM is the best?"`  |
-| Sentence  | str  | `explaination:Sentence = "Explain why"`  |
-| Paragraph  | str  | `long_explaination:Paragraph = "Give mode details"`  |
+| Int  | int  | `number = Int("Give me a number between 0 and 10")`  |
+| Float  | float  | `number = Float("Give me a number between 0.1 and 0.7")`  |
+| Bool  | bool  | `truth:Bool = Bool("Are local LLMs better than online LLMs?")`  |
+| Word  | str  | `better = Word("Which instruct LLM is the best?")`  |
+| Sentence  | str  | `explaination = Sentence("Explain why")`  |
+| Paragraph  | str  | `long_explaination = Paragraph("Give mode details")`  |
+| Free  | str  | `unlimited = Free("Speak a lot without control...")`  |
 
-### Example:
-```python
-class WayOfThinking(Noesis):
-    
-    def description(self):
-        """
-        You are a nice assistant.
-        """
-        found = False
-        hello:Word = "Say 'hello' in French"
-        while(not found):
-            nb_letter:Int = f"How many letter in {hello.value}"
-            verification:Bool = f"Does {hello.value} really contains {nb_letter.value} letters?"
-            if verification.value:
-                print("Verification done!")
-                found = True
-
-        return hello.value, nb_letter.value
-
-wot = WayOfThinking()
-reflexions = wot.constitute(subject, verbose=True)
-print(reflexions)
-```
 
 ### Composed Generators
 
 List of simple Generators can be built.
-| Noema Type | Python Type  | Usage |
+| Noema Type | Generator Type  | Usage |
 |-----------|-----------|-----------|
-| IntList  | [int]  | `number:IntList = "Give me a list of number between 0 and 10"`  |
-| FloatList  | [float]  | `number:FloatList = "Give me a list of number between 0.1 and 0.7"`  |
-| BoolList  | [bool]  | `truth:BoolList = "Are local LLMs better than online LLMs, and Mistral better than LLama?"`  |
-| WordList  | [str]  | `better:WordList = "List the best instruct LLM"`  |
-| SentenceList  | [str]  | `explaination:SentenceList = "Explain step by step why"`  |
+| ListOf  | [Int]  | `number = ListOf(Int,"Give me a list of number between 0 and 10")`  |
+| ListOf  | [Float]  | `number = ListOf(Float,"Give me a list of number between 0.1 and 0.7")`  |
+| ListOf  | [Bool]  | `truth_list = ListOf(Bool,"Are local LLMs better than online LLMs, and Mistral better than LLama?")`  |
+| ListOf  | [Word]  | `better = ListOf(Word,"List the best instruct LLM")`  |
+| ListOf  | [Sentence]  | `explaination = ListOf(Sentence,"Explain step by step why")`  |
 
-
-### Fill-in-the-blanks Generator
-| Noema Type | Python Type 
-|-----------|-----------|
-| Fill  | var_name.sub_var_name  | 
-
-```python
-though:Fill = ("Categorizing user comment",
-                """The user language is {Word:language}
-                From a psychologist point of view, this comment is {Sentence:psycho}"""
-
-# Property are added to though
-# though.language 
-# thought.psycho
-```
-
-
-### Reflexion Generator:
-
-Reflexion generators provide a simple way to make the LLM *think* about something.
-
-| Noema Type | Python Type  | Usage |
-|-----------|-----------|-----------|
-| Reflexion  | str  | `builder:Reflexion = "How to build a house in the forest?"`  |
-
-<details>
-  <summary>It will follow an abstract reflection prompt:</summary>
-
-```
-[INST]How to build a house in the forest?
- Follow these steps of reasoning, using a loop to determine whether the process should continue or if the reflection is complete:
-1. Initial Hypothesis: Provide a first answer or explanation based on your current knowledge.
-2. Critical Analysis: Evaluate the initial hypothesis. Look for contradictions, weaknesses, or areas of uncertainty.
-3. Conceptual Revision: Revise or improve the hypothesis based on the critiques from the Critical Analysis.
-4. Extended Synthesis: Develop a more complete and nuanced response by incorporating additional perspectives or knowledge.
-5. Loop or Conclusion: Return to the Decision Point. If the answer is now coherent and well-justified, you repond 'satisfying' and move to the Conclusion. If further refinement is needed, respond 'loop again' and go to the Critical Analysis. 
-6. Final Conclusion: Once the reflection is considered complete, provide a final answer, clearly explaining why this response is coherent and well-justified, summarizing the key steps of the reasoning process.
-7. Quality of the reflection: Provide a quality assessment of the reflection process. 
-Done.
-[/INST]
-```
-</details>
 
 ### Code Generator
 
@@ -504,7 +266,7 @@ The `LanguageName` type provide a way to generate `LanguageName` code
 
 | Noema Type | Python Type  | Usage |
 |-----------|-----------|-----------|
-| Python  | str  | `interface:Python = "With pyqt5, genereate a window with a text field and a OK button."`  |
+| Python  | str  | `interface = Python("With pyqt5, genereate a window with a text field and a OK button.")`  |
 
 <details>
   <summary>Language List</summary>
@@ -561,58 +323,34 @@ The type Information is useful to insert some context to the LLM at the right ti
 
 | Noema Type | Python Type  | Usage |
 |-----------|-----------|-----------|
-| Information  | str  | `tips:Information = "Here you can inject some information in the LLM"`  |
+| Information  | str  | `tips = Information("Here you can inject some information in the LLM")`  |
 
 Here we use a simple string, but we can also insert a string from a python function call, do some RAG or any other tasks.
 
-## Noesis / Noema / Value
 
-Every generator as the following properties by default:
+# Advanced:
+
+### SemPy : Semantic python
+
+The SemPy type is creating Python function dynamically and execute it with your parameters.
+| Noema Type | Python Type  | Usage |
+|-----------|-----------|-----------|
+| SemPy  | depending  | `letter_place = SemPy("Find the place of a letter in a word.")("hello world","o")`  |
+
 ```python
-from Noema import *
-
-subject = Subject("path/to/your/model.gguf")
-
-class WayOfThinking(Noesis):
-    
-    def description(self):
-        """
-        You are a specialist in nice house building.
-        """
-        builder:Reflexion = "How to build a house in the forest?"
-        print("Noesis:")
-        print(builder.noesis)
-        print("-"*50)
-        print("Noema:")
-        print(builder.noema)
-        print("-"*50)
-        print("Value:")
-        print(builder.value)
-        print("-"*50)
-
-WayOfThinking().constitute(subject)
+@Noema
+def think(self):
+    """Instruct prompt """
+    letter_index = SemPy("Find the place of a letter in a word.")("hello world","o") 
+    # generate a python function with 2 parameters that follow the instruction `Find the place of a letter in a word.`'
+    # def find_letter_position(word, letter):
+    # try:
+    #     return word.index(letter)
+    # except ValueError:
+    #     return -1  # Return -1 if letter is not found in word
+    # 
+    # Execute:
+    # find_letter_position("hello world", "o")
+    print(letter_index.value) # 4
 ```
 
-<details>
-  <summary>Produced output:</summary>
-
-```
-Noesis:
-How to build a house in the forest?
---------------------------------------------------
-Noema:
-
-        ***Initial Hypothesis: To build a house in the forest, you need to find a suitable location, clear the area of trees and debris, and then construct the house using materials such as wood, stone, and metal. You may also need to consider factors such as water supply, electricity, and waste disposal.
-While this initial hypothesis provides a general outline of the process, it lacks specific details and considerations. For example, it does not address the importance of selecting a location with good drainage to prevent flooding, or the need to obtain necessary permits and approvals from local authorities.
-To build a house in the forest, you should first research and select a suitable location, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment.
-Building a house in the forest requires careful planning and consideration of environmental factors. You should research and select a location that is suitable for building, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment. Additionally, you may want to consider building a greenhouse or garden to grow your own food and reduce your reliance on outside resources.
-loop again
-Building a house in the forest requires careful planning and consideration of environmental factors. You should research and select a suitable location, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment. Additionally, you may want to consider building a greenhouse or garden to grow your own food and reduce your reliance on outside resources. This response is coherent and well-justified because it takes into account the importance of selecting a suitable location, obtaining necessary permits and approvals, and using sustainable materials and systems to minimize the impact on the environment.
-Reflexion loop completed.
---------------------------------------------------
-Value:
-Building a house in the forest requires careful planning and consideration of environmental factors. You should research and select a suitable location, taking into account factors such as soil type, drainage, and proximity to water sources. You should also obtain necessary permits and approvals from local authorities. Once you have a clear plan, you can begin clearing the area of trees and debris, and then construct the house using sustainable materials such as wood, stone, and metal. You should also consider installing a water filtration system, a solar-powered electricity system, and a composting toilet to minimize your impact on the environment. Additionally, you may want to consider building a greenhouse or garden to grow your own food and reduce your reliance on outside resources. This response is coherent and well-justified because it takes into account the importance of selecting a suitable location, obtaining necessary permits and approvals, and using sustainable materials and systems to minimize the impact on the environment.
-
---------------------------------------------------
-```
-</details>
