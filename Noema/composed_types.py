@@ -21,8 +21,11 @@ class ListOf(BaseGenerator):
     def execute(self):
         llm = Subject().shared().llm
         noesis = ""
+        local_hint = ""
         if self.hint != None:
-            noesis = self.value + f"({self.hint})" + "\n"
+            local_hint = self.hint.replace("#ITEM_TYPE#", self.type.__name__)
+            print(f"{self.id} = {self.value} ({local_hint})")
+            noesis = self.value + f"({local_hint})" + "\n"
         else:
             noesis = self.value + "\n"
         var = "" 
@@ -40,11 +43,11 @@ class ListOf(BaseGenerator):
         first = True
         for i in range(100):
             if first:
-                llm += f"{i+1}. " + gen(name="response", regex=item.regex) + "\n"
+                llm += f"{i+1}. " + gen(name="response", regex=item.regex, stop=f"\n{i+2}.") + "\n"
                 value = llm["response"].strip()
                 first = False
             else:
-                llm += select([f"{i+1}. " + gen(name="response", regex=item.regex) + "\n", "```"], name="selected")
+                llm += select([f"{i+1}. " + gen(name="response", regex=item.regex, stop=f"\n{i+2}.") + "\n", "```"], name="selected")
                 value = llm["selected"].strip()
             if value == "```":
                 break
@@ -57,4 +60,4 @@ class ListOf(BaseGenerator):
         self.value = res
         self.noesis = noesis
         if Subject().shared().verbose:
-            print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")    
+            print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({local_hint})'}\033[0m)")    

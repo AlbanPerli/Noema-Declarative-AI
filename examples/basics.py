@@ -26,7 +26,7 @@ class SimpleWayOfThinking:
             point_of_view = Sentence(f"Providing a point of view about the task different than {povs}", step_nb)
             point_of_view_qualification = Word(f"Qualifying the point of view, must choose a word different of: {povs}", step_nb)
             povs.append(point_of_view_qualification.value)
-            creativitity_level = Float(f"How creative is this point of view: {povs[-1]}. (Between 0-10)", step_nb)
+            creativitity_level = Float(f"How creative is this point of view: {povs[-1]}. (Between 0-10)", step_nb)            
             if creativitity_level.value < 8.0:
                 important = Information("I need to be more creative!")
         conclusion = Paragraph("Providing a conclusion which is a synthesis of the previous steps.")

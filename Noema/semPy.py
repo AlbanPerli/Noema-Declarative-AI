@@ -6,10 +6,11 @@ from .Subject import Subject
 class SemPy(Generator):
     hint = "Response format: A Python function."
     
-    def __init__(self, value):
+    def __init__(self, value, max_retry=3):
         self.noesis = value
         self.instruction = value
         self.value = None
+        self.max_retry = max_retry
         self.id = "Python_Code"
         
     def run(self, *args, **kwargs):
@@ -23,6 +24,7 @@ class SemPy(Generator):
                 func_name = node.name
                 
         exec(self.value, local_context)
+        
         print("Function name: ", func_name)
         print("Args: ", args)
         result = local_context[func_name](*args)
@@ -52,7 +54,10 @@ class SemPy(Generator):
 {self.instruction}
 
 Using the following form: 
-```def function_name({formated_params}):```
+```
+import needed_libraries
+
+def function_name({formated_params}):```
 
 Produce only the code, no example or explanation.
 [/INST]
@@ -67,8 +72,10 @@ Produce only the code, no example or explanation.
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):  
                 node.name = "noema_func"
+                break
         function_str = ast.unparse(tree)
         local_context = {}
+        print(function_str)
         exec(function_str, local_context)
         self.value = local_context["noema_func"](*args, **kwargs)
         if Subject().shared().verbose:
