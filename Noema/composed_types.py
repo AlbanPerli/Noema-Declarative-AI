@@ -24,7 +24,6 @@ class ListOf(BaseGenerator):
         local_hint = ""
         if self.hint != None:
             local_hint = self.hint.replace("#ITEM_TYPE#", self.type.__name__)
-            print(f"{self.id} = {self.value} ({local_hint})")
             noesis = self.value + f"({local_hint})" + "\n"
         else:
             noesis = self.value + "\n"
