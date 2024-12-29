@@ -267,6 +267,15 @@ List of simple Generators can be built.
 | ListOf  | [Sentence]  | `explaination = ListOf(Sentence,"Explain step by step why")`  |
 
 
+### Selectors
+
+Select the appropriate value.
+| Noema Type | Generator Type  | Usage |
+|-----------|-----------|-----------|
+| Select | str | `qualify_synthesis = Select("Qualify the synthesis", options=["good", "bad", "neutral"])` |
+| SelectOrNone | str | `contains = SelectOrNone("Does contain the following ideas", options=["Need to update the code", "Is totally secured"])` |
+
+
 ### Code Generator
 
 The `LanguageName` type provide a way to generate `LanguageName` code

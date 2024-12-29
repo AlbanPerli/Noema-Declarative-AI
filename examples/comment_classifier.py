@@ -17,6 +17,8 @@ def comment_evaluation(comment):
     analyse_by_specialists[specialist] = analysis.value
   
   synthesis = Paragraph("Providing a synthesis of the analysis.")
+  qualify_synthesis = Select("Qualify the synthesis", options=["good", "bad", "neutral"])
+  print(f"Synthesis: {synthesis.value} is {qualify_synthesis.value}")
   return synthesis.value, analyse_by_specialists
 
 synthesis, abs = comment_evaluation("This llm is very good!")
