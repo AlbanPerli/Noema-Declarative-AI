@@ -50,35 +50,39 @@ class SemPy(Generator):
     def __call__(self, *args, **kwargs):
         formated_params = self.format_parameters(args, kwargs)
         llm = Subject().shared().llm
-        llm += f"""[INST]Generate a Python function to perform the following task:
+        self.noesis = f"""[INST]Generate a Python function to perform the following task:
 {self.instruction}
 
 Using the following form: 
+```Python
+# import libraries if needed
+
+def function_name({formated_params}):
+    # Your code here
+
+
+# this function will be called by the Noema engine
+# do not change the name or the signature
+# it is the last thing you should write in your code.
+def noema_func({formated_params}):
+    return function_name({formated_params})
 ```
-import needed_libraries
 
-def function_name({formated_params}):```
-
+Always use the function name `noema_func` as the last function in your code to return the result to the Noema engine.
 Produce only the code, no example or explanation.
 [/INST]
 
 ```Python
 """
-
+        llm += self.noesis
         llm += gen(name="response", stop="```")
         function_str = llm["response"]
         self.noema = function_str
-        tree = ast.parse(function_str)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef):  
-                node.name = "noema_func"
-                break
-            
-        function_str = ast.unparse(tree)
         local_context = {}
         print(function_str)
         exec(function_str, local_context)
         self.value = local_context["noema_func"](*args, **kwargs)
+        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
         if Subject().shared().verbose:
             print(f"\033[93m{self.noema}\n Returns:\n{self.value}\nFor parametters:{formated_params}\033[0m\n(\033[94m{self.noesis + f'({self.hint})'}\033[0m)")
         return self

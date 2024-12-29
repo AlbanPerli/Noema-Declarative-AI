@@ -345,19 +345,99 @@ The SemPy type is creating Python function dynamically and execute it with your 
 | SemPy  | depending  | `letter_place = SemPy("Find the place of a letter in a word.")("hello world","o")`  |
 
 ```python
+from Noema import *
+
 @Noema
-def think(self):
-    """Instruct prompt """
-    letter_index = SemPy("Find the place of a letter in a word.")("hello world","o") 
-    # generate a python function with 2 parameters that follow the instruction `Find the place of a letter in a word.`'
-    # def find_letter_position(word, letter):
-    # try:
-    #     return word.index(letter)
-    # except ValueError:
-    #     return -1  # Return -1 if letter is not found in word
-    # 
-    # Execute:
-    # find_letter_position("hello world", "o")
-    print(letter_index.value) # 4
+def simple_task(task, parameters):
+    """You are an incredible Python developer.
+    Always looking for the best way to write code."""
+    task_to_code = Information(f"I want to {task}")
+    formulation = Sentence("Reformulate the task to be easily understood by a Python developer.")
+    decomposition = ListOf(Sentence,"Decompose the task into smaller sub-tasks.")
+    result = SemPy(formulation.value)(parameters) 
+    # Generated code:
+    #
+    # def function_name(word):
+    #     letter_counts = {}
+    #     for char in word:
+    #         if char.isalpha():  # Ensure only letters are counted
+    #             char = char.lower()  # Convert to lowercase for uniformity
+    #             if char in letter_counts:
+    #                 letter_counts[char] += 1
+    #             else:
+    #                 letter_counts[char] = 1
+    #     return letter_counts
+
+    # def noema_func(word):
+    #     return function_name(word)
+
+    return result.value 
+    
+Subject("../Models/EXAONE-3.5-7.8B-Instruct-Q4_K_M.gguf",verbose=True)
+nb_letter = simple_task("Count the occurence of letters in a word", "strawberry")
+print(nb_letter)
+# {'s': 1, 't': 1, 'r': 3, 'a': 1, 'w': 1, 'b': 1, 'e': 1, 'y': 1}
 ```
+
+### Visualisation
+
+Enabling reflection visualization with `write_graph = True` in the Subject init create a PlantUML and Mermaid diagram respectively in `diagram.puml` and `diagram.mmd`
+
+```python
+from Noema import *
+
+
+# Create a new Subject
+Subject("../Models/granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", verbose=True, write_graph=True)
+
+@Noema
+def analysis_evaluation(analysis):
+    """
+    You are a specialist of analysis evaluation.
+    You produce a numerical evaluation of the analysis, 0 is bad, 10 is good.
+    Good means that the analysis is relevant and useful.
+    Bad means that the analysis is not relevant and not useful.
+    """
+    analysis_to_evaluate = Information(f"{analysis}")
+    evaluation = Float("Evaluation of the analysis, between 0 and 10")
+    return evaluation.value
+
+@Noema
+def comment_note_evaluation(analysis):
+    """
+    You are a specialist of evaluation commenting.
+    You always produce a deep analysis of the comment.
+    """
+    analysis_to_evaluate = Information(f"{analysis}")
+    comment = Sentence("Commenting the analysis")
+    return comment.value
+
+@Noema
+def comment_evaluation(comment):
+  """
+  You are a specialist of comment analysis.
+  You always produce a deep analysis of the comment.
+  """
+  comment_to_analyse = Information(f"{comment}")
+  specialists = ["Psychologist", "Sociologist", "Linguist", "Philosopher"]
+  analyse_by_specialists = {}
+  for specialist in specialists:
+    analysis = Sentence(f"Analysing the comment as a {specialist}")
+    analyse_by_specialists[specialist] = analysis.value
+    evaluation = analysis_evaluation(analysis.value)
+    comment_note_evaluation_res = comment_note_evaluation(evaluation)
+    improvements = ListOf(Sentence, "List 4 improvements")
+  
+  synthesis = Paragraph("Providing a synthesis of the analysis.")
+  sub = Substring(f"Extracting synthesis comment from {synthesis.value}")
+  print(sub.value)
+  return synthesis.value
+
+synthesis = comment_evaluation("This llm is very good!")
+print(synthesis)
+```
+<p align="center">
+  <img src="visu.png" alt="Visualization example"/>
+</p>
+
 

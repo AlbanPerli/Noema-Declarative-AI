@@ -1,0 +1,109 @@
+@startuml
+!theme bluegray
+participant comment_evaluation
+note over comment_evaluation: You are a specialist of comment analysis.   You\nalways produce a deep analysis of the comment.
+note right of comment_evaluation: #COMMENT_TO_ANALYSE: This llm is very good!
+comment_evaluation -> comment_evaluation: This llm is very good!
+note right of comment_evaluation: Analysing the comment as a Psychologist(Response\nformat: a sentence)
+comment_evaluation -> comment_evaluation: The comment expresses a positive sentiment towards\nthe llm, indicating satisfaction or approval.
+create analysis_evaluation
+comment_evaluation -> analysis_evaluation: Call analysis_evaluation
+group analysis_evaluation
+note over analysis_evaluation: [INST]     You are a specialist of analysis\nevaluation.     You produce a numerical evaluation\nof the analysis, 0 is bad, 10 is good.     Good\nmeans that the analysis is relevant and useful.\nBad means that the analysis is not relevant and\nnot useful.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' [/INST]
+note over analysis_evaluation: You are a specialist of analysis evaluation.\nYou produce a numerical evaluation of the\nanalysis, 0 is bad, 10 is good.     Good means\nthat the analysis is relevant and useful.     Bad\nmeans that the analysis is not relevant and not\nuseful.
+note right of analysis_evaluation: #ANALYSIS_TO_EVALUATE: The comment expresses a\npositive sentiment towards the llm, indicating\nsatisfaction or approval.
+analysis_evaluation -> analysis_evaluation: The comment expresses a positive sentiment towards\nthe llm, indicating satisfaction or approval.
+note right of analysis_evaluation: Evaluation of the analysis, between 0 and\n10(Response format: Float number)
+analysis_evaluation -> analysis_evaluation: 8.5
+end group
+analysis_evaluation --> comment_evaluation: Return 8.5
+create comment_note_evaluation
+comment_evaluation -> comment_note_evaluation: Call comment_note_evaluation
+group comment_note_evaluation
+note over comment_note_evaluation: [INST]     You are a specialist of evaluation\ncommenting.     You always produce a deep analysis\nof the comment.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' #COMMENT : Commenting the analysis\n(Response format: a sentence) [/INST]
+note over comment_note_evaluation: You are a specialist of evaluation commenting.\nYou always produce a deep analysis of the comment.
+note right of comment_note_evaluation: #ANALYSIS_TO_EVALUATE: 8.5
+comment_note_evaluation -> comment_note_evaluation: 8.5
+note right of comment_note_evaluation: Commenting the analysis(Response format: a\nsentence)
+comment_note_evaluation -> comment_note_evaluation: The comment expresses a positive sentiment towards\nthe llm, indicating satisfaction or approval.
+end group
+comment_note_evaluation --> comment_evaluation: Return The comment expresses a positive sentiment towards\nthe llm, indicating satisfaction or approval.
+note right of comment_evaluation: List 4 improvements(Response format: a list of\nSentence separated by carriage returns.)
+comment_evaluation -> comment_evaluation: The comment could be improved by providing more\nspecific details about the llm.\nThe analysis could be enhanced by discussing the\nstrengths and weaknesses of the llm.\nThe comment could be more concise, focusing on the\nmain points.\nThe analysis could benefit from a more nuanced\nperspective, considering different aspects of the\nllm.\n
+note right of comment_evaluation: Analysing the comment as a Sociologist(Response\nformat: a sentence)
+comment_evaluation -> comment_evaluation: The comment reflects a sociological perspective,\nhighlighting the social impact and acceptance of\nthe llm.
+comment_evaluation -> analysis_evaluation: Call analysis_evaluation
+group analysis_evaluation
+note over analysis_evaluation: [INST]     You are a specialist of analysis\nevaluation.     You produce a numerical evaluation\nof the analysis, 0 is bad, 10 is good.     Good\nmeans that the analysis is relevant and useful.\nBad means that the analysis is not relevant and\nnot useful.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' [/INST]
+note over analysis_evaluation: You are a specialist of analysis evaluation.\nYou produce a numerical evaluation of the\nanalysis, 0 is bad, 10 is good.     Good means\nthat the analysis is relevant and useful.     Bad\nmeans that the analysis is not relevant and not\nuseful.
+note right of analysis_evaluation: #ANALYSIS_TO_EVALUATE: The comment reflects a\nsociological perspective, highlighting the social\nimpact and acceptance of the llm.
+analysis_evaluation -> analysis_evaluation: The comment reflects a sociological perspective,\nhighlighting the social impact and acceptance of\nthe llm.
+note right of analysis_evaluation: Evaluation of the analysis, between 0 and\n10(Response format: Float number)
+analysis_evaluation -> analysis_evaluation: 9.5
+end group
+analysis_evaluation --> comment_evaluation: Return 9.5
+comment_evaluation -> comment_note_evaluation: Call comment_note_evaluation
+group comment_note_evaluation
+note over comment_note_evaluation: [INST]     You are a specialist of evaluation\ncommenting.     You always produce a deep analysis\nof the comment.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' #COMMENT : Commenting the analysis\n(Response format: a sentence) [/INST]
+note over comment_note_evaluation: You are a specialist of evaluation commenting.\nYou always produce a deep analysis of the comment.
+note right of comment_note_evaluation: #ANALYSIS_TO_EVALUATE: 9.5
+comment_note_evaluation -> comment_note_evaluation: 9.5
+note right of comment_note_evaluation: Commenting the analysis(Response format: a\nsentence)
+comment_note_evaluation -> comment_note_evaluation: The comment provides a comprehensive view of the\nllm's social impact and acceptance, supported by\nrelevant sociological insights.
+end group
+comment_note_evaluation --> comment_evaluation: Return The comment provides a comprehensive view of the\nllm's social impact and acceptance, supported by\nrelevant sociological insights.
+note right of comment_evaluation: List 4 improvements(Response format: a list of\nSentence separated by carriage returns.)
+comment_evaluation -> comment_evaluation: The comment could be more specific about the llm's\nfeatures and capabilities.\nThe analysis could benefit from a more balanced\nperspective, considering both positive and\nnegative aspects.\nThe comment could be more concise, focusing on the\nkey points.\nThe analysis could incorporate more recent\nresearch and data to provide a more up-to-date\nperspective.\n
+note right of comment_evaluation: Analysing the comment as a Linguist(Response\nformat: a sentence)
+comment_evaluation -> comment_evaluation: The comment demonstrates a strong understanding of\nthe llm's social implications, with a focus on its\nacceptance and impact.
+comment_evaluation -> analysis_evaluation: Call analysis_evaluation
+group analysis_evaluation
+note over analysis_evaluation: [INST]     You are a specialist of analysis\nevaluation.     You produce a numerical evaluation\nof the analysis, 0 is bad, 10 is good.     Good\nmeans that the analysis is relevant and useful.\nBad means that the analysis is not relevant and\nnot useful.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' [/INST]
+note over analysis_evaluation: You are a specialist of analysis evaluation.\nYou produce a numerical evaluation of the\nanalysis, 0 is bad, 10 is good.     Good means\nthat the analysis is relevant and useful.     Bad\nmeans that the analysis is not relevant and not\nuseful.
+note right of analysis_evaluation: #ANALYSIS_TO_EVALUATE: The comment demonstrates a\nstrong understanding of the llm's social\nimplications, with a focus on its acceptance and\nimpact.
+analysis_evaluation -> analysis_evaluation: The comment demonstrates a strong understanding of\nthe llm's social implications, with a focus on its\nacceptance and impact.
+note right of analysis_evaluation: Evaluation of the analysis, between 0 and\n10(Response format: Float number)
+analysis_evaluation -> analysis_evaluation: 9.0
+end group
+analysis_evaluation --> comment_evaluation: Return 9.0
+comment_evaluation -> comment_note_evaluation: Call comment_note_evaluation
+group comment_note_evaluation
+note over comment_note_evaluation: [INST]     You are a specialist of evaluation\ncommenting.     You always produce a deep analysis\nof the comment.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' #COMMENT : Commenting the analysis\n(Response format: a sentence) [/INST]
+note over comment_note_evaluation: You are a specialist of evaluation commenting.\nYou always produce a deep analysis of the comment.
+note right of comment_note_evaluation: #ANALYSIS_TO_EVALUATE: 9.0
+comment_note_evaluation -> comment_note_evaluation: 9.0
+note right of comment_note_evaluation: Commenting the analysis(Response format: a\nsentence)
+comment_note_evaluation -> comment_note_evaluation: The comment provides a nuanced perspective on the\nllm's social implications, considering both its\nacceptance and impact.
+end group
+comment_note_evaluation --> comment_evaluation: Return The comment provides a nuanced perspective on the\nllm's social implications, considering both its\nacceptance and impact.
+note right of comment_evaluation: List 4 improvements(Response format: a list of\nSentence separated by carriage returns.)
+comment_evaluation -> comment_evaluation: The comment could be more specific about the llm's\nfeatures and capabilities.\nThe analysis could benefit from a more balanced\nperspective, considering both positive and\nnegative aspects.\nThe comment could be more concise, focusing on the\nkey points.\nThe analysis could incorporate more recent\nresearch and data to provide a more up-to-date\nperspective.\n
+note right of comment_evaluation: Analysing the comment as a Philosopher(Response\nformat: a sentence)
+comment_evaluation -> comment_evaluation: The comment reflects a philosophical approach,\nexamining the llm's social implications and\nacceptance from a broader perspective.
+comment_evaluation -> analysis_evaluation: Call analysis_evaluation
+group analysis_evaluation
+note over analysis_evaluation: [INST]     You are a specialist of analysis\nevaluation.     You produce a numerical evaluation\nof the analysis, 0 is bad, 10 is good.     Good\nmeans that the analysis is relevant and useful.\nBad means that the analysis is not relevant and\nnot useful.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' [/INST]
+note over analysis_evaluation: You are a specialist of analysis evaluation.\nYou produce a numerical evaluation of the\nanalysis, 0 is bad, 10 is good.     Good means\nthat the analysis is relevant and useful.     Bad\nmeans that the analysis is not relevant and not\nuseful.
+note right of analysis_evaluation: #ANALYSIS_TO_EVALUATE: The comment reflects a\nphilosophical approach, examining the llm's social\nimplications and acceptance from a broader\nperspective.
+analysis_evaluation -> analysis_evaluation: The comment reflects a philosophical approach,\nexamining the llm's social implications and\nacceptance from a broader perspective.
+note right of analysis_evaluation: Evaluation of the analysis, between 0 and\n10(Response format: Float number)
+analysis_evaluation -> analysis_evaluation: 8.5
+end group
+analysis_evaluation --> comment_evaluation: Return 8.5
+comment_evaluation -> comment_note_evaluation: Call comment_note_evaluation
+group comment_note_evaluation
+note over comment_note_evaluation: [INST]     You are a specialist of evaluation\ncommenting.     You always produce a deep analysis\nof the comment.       #ANALYSIS_TO_EVALUATE :\nf'{analysis}' #COMMENT : Commenting the analysis\n(Response format: a sentence) [/INST]
+note over comment_note_evaluation: You are a specialist of evaluation commenting.\nYou always produce a deep analysis of the comment.
+note right of comment_note_evaluation: #ANALYSIS_TO_EVALUATE: 8.5
+comment_note_evaluation -> comment_note_evaluation: 8.5
+note right of comment_note_evaluation: Commenting the analysis(Response format: a\nsentence)
+comment_note_evaluation -> comment_note_evaluation: The comment offers a thoughtful exploration of the\nllm's social implications and acceptance,\nsupported by relevant philosophical insights.
+end group
+comment_note_evaluation --> comment_evaluation: Return The comment offers a thoughtful exploration of the\nllm's social implications and acceptance,\nsupported by relevant philosophical insights.
+note right of comment_evaluation: List 4 improvements(Response format: a list of\nSentence separated by carriage returns.)
+comment_evaluation -> comment_evaluation: The comment could be more specific about the llm's\nfeatures and capabilities.\nThe analysis could benefit from a more balanced\nperspective, considering both positive and\nnegative aspects.\nThe comment could be more concise, focusing on the\nkey points.\nThe analysis could incorporate more recent\nresearch and data to provide a more up-to-date\nperspective.\n
+note right of comment_evaluation: Providing a synthesis of the analysis.(Response\nformat: a paragraph)
+comment_evaluation -> comment_evaluation: The comment provides a nuanced exploration of the\nllm's social implications and acceptance,\nsupported by relevant philosophical insights. It\nhighlights the importance of considering both\npositive and negative aspects, and the need for a\nbalanced perspective. The comment could be more\nconcise and focused on the key points, and could\nbenefit from incorporating more recent research\nand data.
+note right of comment_evaluation: Extracting synthesis comment from The comment\nprovides a nuanced exploration of the llm's social\nimplications and acceptance, supported by relevant\nphilosophical insights. It highlights the\nimportance of considering both positive and\nnegative aspects, and the need for a balanced\nperspective. The comment could be more concise and\nfocused on the key points, and could benefit from\nincorporating more recent research and\ndata.(Response format: extract a substring)
+comment_evaluation -> comment_evaluation: The comment provides a nuanced exploration of the\nllm's social implications and acceptance,\nsupported by relevant philosophical insights. It\nhighlights the importance of considering both\npositive and negative aspects, and the need for a\nbalanced perspective. The comment could be more\nconcise and focused on the key points, and could\nbenefit from incorporating more recent research\nand data.
+@enduml

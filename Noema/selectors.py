@@ -28,6 +28,7 @@ class Select(Generator):
         self.noema = self.value
         self.value = res
         self.noesis = noesis
+        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
         if Subject().shared().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {self.options})'}\033[0m)")
             
@@ -63,6 +64,7 @@ class SelectOrNone(Generator):
         else:
             self.value = res
         self.noesis = noesis
+        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
         if Subject().shared().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {self.options})'}\033[0m)")
         

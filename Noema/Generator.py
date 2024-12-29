@@ -61,6 +61,7 @@ class Generator(BaseGenerator):
         else:
             self.value = self.return_type(res)
         self.noesis = noesis
+        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
         if Subject().shared().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")    
 

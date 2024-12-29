@@ -1,6 +1,7 @@
-from .Generator import Generator
+from .Generator import Generator, noema_generator
 from .Subject import Subject
 from guidance import substring
+
 
 class Substring(Generator):
     
@@ -21,5 +22,6 @@ class Substring(Generator):
         self.noema = self.value
         self.value = res
         self.noesis = noesis
+        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
         if Subject().shared().verbose:
             print(f"{self.id.replace('self.', '')} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")

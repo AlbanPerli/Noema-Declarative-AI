@@ -7,6 +7,7 @@ from .information import *
 from .selectors import *
 from .text_gen import *
 from .atomic_types import *
+from .substring import *
 from .composed_types import *
 from .semPy import *
 
@@ -98,6 +99,7 @@ def Noema(func):
                     subclasses.append((name, obj))
             return subclasses
     
+        func_name = func.__name__
         doc = func.__doc__
         if doc is None:
             raise ValueError("Noema function must have a docstring")
@@ -113,8 +115,17 @@ def Noema(func):
         finder.visit(tree)
         noesis = NoesisBuilder(doc, finder.instances).build()
         Subject().shared().llm += "\n"+noesis
-        return func(*args, **kwargs)
-        
+        Subject().shared().enter_function(func_name, doc, noesis)
+        result = None  # Initialisation de 'result'
+        try:
+            result = func(*args, **kwargs)
+        except Exception as e:
+            Subject().shared().exit_function(result)
+            raise e  # Relancer l'exception après le nettoyage
+        else:
+            Subject().shared().exit_function(result)
+        return result
+    
     return wrapper
 
     

@@ -6,10 +6,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name='Noema',
-    version='1.1.2',
-    description='Description of Noema',
-    long_description=long_description,  # Inclure la description longue
-    long_description_content_type='text/markdown',  # Spécifiez le format de la description (markdown ou rst)
+    version='1.1.3',
+    description='A declarative way to control LLMs.',
+    long_description=long_description,  
+    long_description_content_type='text/markdown',  
     author='Alban Perli',
     author_email='alban.perli@gmail.com',
     url='https://github.com/AlbanPerli/Noema-Declarative-AI',
