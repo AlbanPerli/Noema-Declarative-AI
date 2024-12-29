@@ -19,6 +19,9 @@ Noema is built on [llamacpp](https://github.com/ggerganov/llama.cpp) and [guidan
 pip install Noema
 ```
 
+Install [llama-cpp-python](https://github.com/abetlen/llama-cpp-python?tab=readme-ov-file#supported-backends) using the correct backend.
+
+
 
 # Basic:
 ```python
