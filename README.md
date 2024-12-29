@@ -44,8 +44,8 @@ class SimpleWayOfThinking:
         task = Information(f"{self.task}") # inject information to the LLM
         for i in range(4):
             step_nb = i + 1
-            reflexion = Sentence("Providing a reflexion about the task.", step_nb)
-            consequence = Sentence("Providing the consequence of the reflexion.", step_nb)
+            reflection = Sentence("Providing a reflection about the task.", step_nb)
+            consequence = Sentence("Providing the consequence of the reflection.", step_nb)
             evaluate = Sentence("Evaluating the consequence.", step_nb)
             point_of_view = Sentence(f"Providing a point of view about the task different than {povs}", step_nb)
             point_of_view_qualification = Word(f"Qualifying the point of view, must choose a word different of: {povs}", step_nb)
@@ -71,8 +71,8 @@ You are a simple thinker. You have a task to perform.
 Always looking for the best way to perform it.        
 
 #TASK : f'{self.task}'
-#REFLEXION : Providing a reflexion about the task. (Response format: a sentence)
-#CONSEQUENCE : Providing the consequence of the reflexion. (Response format: a sentence)
+#REFLEXION : Providing a reflection about the task. (Response format: a sentence)
+#CONSEQUENCE : Providing the consequence of the reflection. (Response format: a sentence)
 #EVALUATE : Evaluating the consequence. (Response format: a sentence)
 #POINT_OF_VIEW : f'Providing a point of view about the task different than {povs}' (Response format: a sentence)
 #IMPORTANT : I need to be more creative!
@@ -125,20 +125,20 @@ We can use ReAct prompting with LLM.
 ### ReAct example:
 ```You are in a loop of though.
 Question: Here is the question 
-Reflexion: Thinking about the question
-Observation: Providing observation about the Reflexion
-Analysis: Formulating an analysis about your current reflexion
-Conclusion: Conclude by a synthesis of the reflexion.
+Reflection: Thinking about the question
+Observation: Providing observation about the Reflection
+Analysis: Formulating an analysis about your current reflection
+Conclusion: Conclude by a synthesis of the reflection.
 
 Question: {user_input}
-Reflexion:
+Reflection:
 ```
 
-In that case, the LLM will follow the provided steps: `Reflexion,Observation,Analysis,Conclusion`
+In that case, the LLM will follow the provided steps: `Reflection,Observation,Analysis,Conclusion`
 
-`Thinking about the quesion` is the **Noesis** of `Reflexion`
+`Thinking about the quesion` is the **Noesis** of `Reflection`
 
-The content *generated* by the LLM corresponding to `Reflexion` is the **Noema**.
+The content *generated* by the LLM corresponding to `Reflection` is the **Noema**.
 
 ### Noema let you write python code that automagically:
 1. Build the ReAct prompt
@@ -326,7 +326,7 @@ The `LanguageName` type provide a way to generate `LanguageName` code
 
 ### Information
 
-The type Information is useful to insert some context to the LLM at the right time in the reflexion process.
+The type Information is useful to insert some context to the LLM at the right time in the reflection process.
 
 | Noema Type | Python Type  | Usage |
 |-----------|-----------|-----------|
@@ -379,7 +379,7 @@ print(nb_letter)
 # {'s': 1, 't': 1, 'r': 3, 'a': 1, 'w': 1, 'b': 1, 'e': 1, 'y': 1}
 ```
 
-### Visualisation
+### Visualization
 
 Enabling reflection visualization with `write_graph = True` in the Subject init create a PlantUML and Mermaid diagram respectively in `diagram.puml` and `diagram.mmd`
 
