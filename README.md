@@ -31,7 +31,7 @@ from Noema import *
 Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
 
 @Noema
-def think(self, task):
+def think(task):
     """
     You are a simple thinker. You have a task to perform.
     Always looking for the best way to perform it.
