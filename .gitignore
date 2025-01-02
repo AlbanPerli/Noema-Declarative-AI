@@ -70,3 +70,6 @@ ipython_config.py
 .venv
 env/
 ENV/
+
+# Mac OS
+.DS_Store

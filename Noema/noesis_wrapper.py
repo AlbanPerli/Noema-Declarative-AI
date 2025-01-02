@@ -1,6 +1,7 @@
 import inspect
 from functools import wraps
 import ast
+import re
 import textwrap
 from .Subject import *
 from .information import *
@@ -80,9 +81,13 @@ class NoesisBuilder:
                     step_name = instance['variables'][0].replace("self.", "").upper()
                     noesis += "\n#"+step_name + " : " 
                     if class_name == "ListOf":
-                        noesis += instance['args']['args'][1] + " (" + hint.replace("#ITEM_TYPE#",instance['args']['args'][0]+"s") + ")"
+                        value = instance['args']['args'][1]
+                        value = re.sub(r"\{.*?\}", "<instruction here>", value)
+                        noesis += value + " (" + hint.replace("#ITEM_TYPE#",instance['args']['args'][0]+"s") + ")"
                     else:
-                        noesis += instance['args']['args'][0]
+                        value = instance['args']['args'][0]
+                        value = re.sub(r"\{.*?\}", "<instruction here>", value)
+                        noesis += value
                         if instance_class.hint != None:
                             noesis += " (" + hint + ")"
 

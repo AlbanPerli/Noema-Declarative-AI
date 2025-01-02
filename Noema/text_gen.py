@@ -3,13 +3,13 @@ from .Subject import Subject
 from guidance import gen
 
 class Sentence(Generator):
-    regex = "[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:'\"\\(\\)\-…]*[.!?]$"
+    regex = "[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-…_\$]*[.!?]$"
     hint = "Response format: a sentence"
     return_type = str
     stops = ["\n"]
     
 class Paragraph(Generator):
-    regex = "[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:'\"\\(\\)\-\.…\\n]*[.!?]$"
+    regex = "[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-\.…\\n_\$]*[.!?]$"
     hint = "Response format: a paragraph"
     return_type = str
     stops = ["\n"]
