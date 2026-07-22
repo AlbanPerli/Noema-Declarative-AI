@@ -436,6 +436,24 @@ class TestNoema(unittest.TestCase):
             "The stored comment \"This llm is very good!\" expresses clear positive sentiment.",
         )
 
+    def test_environment_drops_final_response_mode_without_answer(self):
+        class CommentWorkspace(NoemaEnvironment):
+            pass
+
+        raw_answer = (
+            "Final Response Mode (Synthesis required based on previous steps). "
+            "The task was to store, classify, and synthesize an answer.\n\n"
+            "The synthesized response must adhere to the requested tone.\n\n"
+            "Plan: Construct a short"
+        )
+
+        answer = CommentWorkspace()(
+            "Answer cleanly.",
+            planner=lambda environment, prompt, run: {"answer": raw_answer},
+        )
+
+        self.assertEqual(answer, "")
+
     def test_environment_llm_final_generation_uses_strict_final_mode(self):
         class FakeModel:
             def __init__(self):
@@ -471,10 +489,54 @@ class TestNoema(unittest.TestCase):
                     answer = workspace("Answer cleanly.", max_tokens=32)
 
         self.assertEqual(answer, "Clean final answer.")
-        self.assertIn("FINAL RESPONSE MODE", fake_runtime.llm.prompt)
-        self.assertIn("Do not write <think> blocks.", fake_runtime.llm.prompt)
+        self.assertIn("Write the user-facing answer now.", fake_runtime.llm.prompt)
+        self.assertIn("Do not write labels, headings, analysis", fake_runtime.llm.prompt)
         self.assertEqual(mocked_gen.call_args.kwargs["max_tokens"], 32)
         self.assertIn("\n***", mocked_gen.call_args.kwargs["stop"])
+
+    def test_environment_retries_final_generation_when_output_is_only_meta(self):
+        class FakeModel:
+            def __init__(self):
+                self.prompt = ""
+                self.values = {
+                    "noema_environment_action_0": "final",
+                    "noema_environment_final_0": (
+                        "Final Response Mode. The task was completed.\n\n"
+                        "Plan: Construct a short"
+                    ),
+                    "noema_environment_final_retry_0": "Final Answer: The comment is positive.",
+                }
+
+            def __add__(self, value):
+                self.prompt += str(value)
+                return self
+
+            def __getitem__(self, name):
+                return self.values[name]
+
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens}
+
+            def reasoning_prelude(self):
+                return ""
+
+        workspace = NoemaEnvironment()
+        fake_runtime = FakeRuntime()
+
+        with patch.object(workspace, "_activate_runtime", return_value=fake_runtime):
+            with patch("Noema.environment.select", return_value="final"):
+                with patch("Noema.environment.gen", return_value="generated") as mocked_gen:
+                    answer = workspace("Answer cleanly.", max_tokens=128)
+
+        self.assertEqual(answer, "The comment is positive.")
+        self.assertEqual(mocked_gen.call_count, 2)
+        self.assertIn("previous output was rejected", fake_runtime.llm.prompt)
+        self.assertEqual(mocked_gen.call_args.kwargs["max_tokens"], 96)
 
     def test_environment_verbose_llm_loop_prints_colored_logs(self):
         class CommentWorkspace(NoemaEnvironment):

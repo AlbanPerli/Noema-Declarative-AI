@@ -149,17 +149,17 @@ class NoemaEnvironment:
     max_steps = 8
     max_tokens = 256
     argument_tokens = 128
+    final_retry_tokens = 96
     final_stop_sequences = (
-        "***",
-        "*Self-Correction",
-        "Self-Correction",
-        "Final Response Generation",
-        "Final response generation",
         "\n***",
         "\n*Self-Correction",
         "\nSelf-Correction",
         "\nFinal Response Generation",
         "\nFinal response generation",
+        "\nFinal Response Mode",
+        "\nFinal response mode",
+        "\nPlan:",
+        "\nplan:",
         "\nThe chosen output format",
         "\n#NOEMA_ENV",
     )
@@ -313,8 +313,18 @@ class NoemaEnvironment:
             llm += runtime.reasoning_prelude()
             llm += f"#NOEMA_ENV_FINAL_{step_index}: "
             llm += gen(name=answer_name, **generation_kwargs) + "\n"
+            raw_answer = llm[answer_name]
+            if not _clean_final_answer(raw_answer) and str(raw_answer).strip():
+                retry_name = f"noema_environment_final_retry_{step_index}"
+                retry_kwargs = runtime.generation_kwargs(min(max_tokens, self.final_retry_tokens))
+                retry_kwargs["stop"] = list(self.final_stop_sequences)
+                llm += self._final_retry_prompt(prompt, run)
+                llm += runtime.reasoning_prelude()
+                llm += f"#NOEMA_ENV_FINAL_RETRY_{step_index}: "
+                llm += gen(name=retry_name, **retry_kwargs) + "\n"
+                raw_answer = llm[retry_name]
             runtime.llm = llm
-            return EnvironmentDecision.final(llm[answer_name])
+            return EnvironmentDecision.final(raw_answer)
 
         tool_name = action.split(":", 1)[1]
         spec = specs[tool_name]
@@ -357,18 +367,32 @@ class NoemaEnvironment:
     def _final_prompt(self, prompt, run):
         return textwrap.dedent(
             f"""
+            Write the user-facing answer now.
+            Use the executed tool results as facts, but do not name tools,
+            actions, observations, planning, instructions, or output rules.
+            Keep the answer short and direct unless the request asks otherwise.
+            Do not write labels, headings, analysis, self-corrections, plans,
+            or <think> blocks.
 
-            FINAL RESPONSE MODE
-            Produce only the user-facing answer to the original prompt.
-            Do not describe tool calls, observations, internal reasoning,
-            planning, self-corrections, prompt rules, or output format.
-            Do not write <think> blocks.
-            Do not prefix the answer with "Final Answer:".
-
-            ORIGINAL USER PROMPT:
+            Original request:
             {prompt}
 
-            FINAL OBSERVATIONS:
+            Facts from executed tools:
+            {_format_observations(run.observations)}
+            """
+        ).strip() + "\n"
+
+    def _final_retry_prompt(self, prompt, run):
+        return textwrap.dedent(
+            f"""
+            The previous output was rejected because it was meta commentary
+            instead of the answer. Reply with one short user-facing answer.
+            Start immediately with the answer content.
+
+            Original request:
+            {prompt}
+
+            Facts from executed tools:
             {_format_observations(run.observations)}
             """
         ).strip() + "\n"
@@ -560,10 +584,10 @@ def _drop_meta_preamble(text):
         dropped = True
     if len(paragraphs) != 1:
         return "\n\n".join(paragraph for paragraph in paragraphs if paragraph)
-    if dropped:
-        return paragraphs[0]
     if _is_meta_preamble(paragraphs[0]):
         return ""
+    if dropped:
+        return paragraphs[0]
     return text
 
 
@@ -572,14 +596,22 @@ def _is_meta_preamble(text):
     if not normalized:
         return False
     prefixes = (
+        "final response mode",
         "final response generation",
         "synthesis of actions taken",
         "self-correction",
         "refinement",
         "reasoning",
         "analysis",
+        "plan:",
         "the request requires",
         "since all actions",
+        "the synthesized response",
+        "the synthesized answer",
+        "the synthesis should",
+        "the answer should",
+        "the final answer should",
+        "the task was",
     )
     if normalized.startswith(prefixes):
         return True
