@@ -27,7 +27,7 @@ class EvidenceNotebook(NoemaEnvironment):
     facts = Memory(default_factory=list)
     constraints = Memory(default_factory=list)
 
-    @tool
+    @tool(description="Record one factual observation with its source.")
     def record_fact(self, source: str, observation: str):
         fact = {
             "source": source,
@@ -39,7 +39,7 @@ class EvidenceNotebook(NoemaEnvironment):
             "fact_count": len(self.facts),
         }
 
-    @tool
+    @tool(description="Record one investigation constraint such as time, scope, or known limitation.")
     def record_constraint(self, name: str, value: str):
         constraint = {
             "name": name,
@@ -48,7 +48,7 @@ class EvidenceNotebook(NoemaEnvironment):
         self.constraints.append(constraint)
         return constraint
 
-    @tool
+    @tool(description="Return all recorded facts and constraints.")
     def snapshot(self):
         return {
             "facts": self.facts,
@@ -63,7 +63,7 @@ class HypothesisLab(NoemaEnvironment):
     tests = Memory(default_factory=list)
     rejected = Memory(default_factory=list)
 
-    @tool
+    @tool(description="Create one competing root-cause hypothesis.")
     def propose_hypothesis(self, name: str, mechanism: str):
         hypothesis = {
             "mechanism": mechanism,
@@ -76,7 +76,7 @@ class HypothesisLab(NoemaEnvironment):
             **hypothesis,
         }
 
-    @tool
+    @tool(description="Test one hypothesis; verdict must be supported, weakened, or neutral.")
     def test_hypothesis(self, name: str, evidence: str, verdict: str):
         normalized = verdict.lower()
         if "support" in normalized or "confirm" in normalized:
@@ -104,7 +104,7 @@ class HypothesisLab(NoemaEnvironment):
         self.tests.append(test)
         return test
 
-    @tool
+    @tool(description="Reject one hypothesis that conflicts with the evidence.")
     def reject_hypothesis(self, name: str, reason: str):
         hypothesis = self.hypotheses.setdefault(
             name,
@@ -118,7 +118,7 @@ class HypothesisLab(NoemaEnvironment):
         self.rejected.append(rejection)
         return rejection
 
-    @tool
+    @tool(description="Return open hypotheses sorted by support score.")
     def rank_hypotheses(self):
         ranked = sorted(
             (
@@ -137,7 +137,7 @@ class DiagnosticConsole(NoemaEnvironment):
 
     checks = Memory(default_factory=list)
 
-    @tool
+    @tool(description="Compare an observed numeric metric with its baseline.")
     def compare_metric(self, name: str, baseline: float, observed: float):
         if baseline == 0:
             ratio = None
@@ -156,7 +156,7 @@ class DiagnosticConsole(NoemaEnvironment):
         self.checks.append(result)
         return result
 
-    @tool
+    @tool(description="Check whether one expected fragment appears in a log line.")
     def check_log_contains(self, log_line: str, expected: str):
         found = expected.lower() in log_line.lower()
         result = {
@@ -174,7 +174,7 @@ class ResolutionBoard(NoemaEnvironment):
     conclusions = Memory(default_factory=list)
     actions = Memory(default_factory=list)
 
-    @tool
+    @tool(description="Record the final root cause with confidence and supporting evidence.")
     def draw_conclusion(self, root_cause: str, confidence: str, supporting_evidence: str):
         conclusion = {
             "root_cause": root_cause,
@@ -184,7 +184,7 @@ class ResolutionBoard(NoemaEnvironment):
         self.conclusions.append(conclusion)
         return conclusion
 
-    @tool
+    @tool(description="Record the immediate corrective action, owner, and urgency.")
     def plan_action(self, owner: str, action: str, urgency: str):
         next_action = {
             "owner": owner,
@@ -194,7 +194,7 @@ class ResolutionBoard(NoemaEnvironment):
         self.actions.append(next_action)
         return next_action
 
-    @tool
+    @tool(description="Return the recorded conclusions and actions.")
     def snapshot(self):
         return {
             "conclusions": self.conclusions,
@@ -249,7 +249,7 @@ def main():
         Incident notes:
         {incident_notes}
         """,
-        max_steps=16,
+        max_steps=20,
         max_tokens=160,
     )
 

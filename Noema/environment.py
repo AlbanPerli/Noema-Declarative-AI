@@ -198,7 +198,7 @@ class NoemaEnvironment:
     llm = None
     max_steps = 8
     max_tokens = 256
-    argument_tokens = 128
+    argument_tokens = 256
     final_retry_tokens = 96
     final_stop_sequences = (
         "\n***",
@@ -272,7 +272,15 @@ class NoemaEnvironment:
             return EnvironmentObservation(tool=tool_name, args=dict(kwargs), result=observation.result)
 
         method = getattr(self, spec.method_name)
-        inspect.signature(method).bind(**kwargs)
+        signature = inspect.signature(method)
+        try:
+            signature.bind(**kwargs)
+        except TypeError as error:
+            return EnvironmentObservation(
+                tool=tool_name,
+                args=dict(kwargs),
+                result=_tool_argument_error(spec, kwargs, error),
+            )
         result = method(**kwargs)
         return EnvironmentObservation(tool=tool_name, args=dict(kwargs), result=result)
 
@@ -479,6 +487,8 @@ class NoemaEnvironment:
             You are executing inside this Python object. You may inspect visible
             state, call one exposed tool, or produce the final answer. Choose a
             tool only when its result is needed.
+            If the latest observation is an error, correct the failed tool call
+            before producing a final answer.
 
             USER PROMPT:
             {prompt}
@@ -529,7 +539,10 @@ class NoemaEnvironment:
         return textwrap.dedent(
             f"""
             Build arguments for tool {spec.name}.
-            Required JSON object parameters: {', '.join(spec.parameters)}.
+            Tool signature: {spec.signature}.
+            Required JSON object keys: {', '.join(spec.parameters)}.
+            JSON shape: {_argument_json_shape(spec)}.
+            Include every required key exactly once.
             Return a compact one-line JSON object only.
             """
         ).strip()
@@ -682,6 +695,22 @@ def _format_tool_call(tool_name, args):
         return f"{tool_name}()"
     arguments = ", ".join(f"{name}={value!r}" for name, value in args.items())
     return f"{tool_name}({arguments})"
+
+
+def _argument_json_shape(spec):
+    return json.dumps({name: f"<{name}>" for name in spec.parameters}, ensure_ascii=True)
+
+
+def _tool_argument_error(spec, args, error):
+    return {
+        "error": {
+            "type": "invalid_tool_arguments",
+            "message": str(error),
+            "expected": spec.signature,
+            "received": _json_safe(args),
+            "hint": "Call the same tool again with every required JSON key.",
+        }
+    }
 
 
 def _json_log(value):

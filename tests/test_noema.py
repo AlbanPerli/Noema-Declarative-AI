@@ -491,6 +491,58 @@ class TestNoema(unittest.TestCase):
             "labeler.label",
         ])
 
+    def test_environment_records_invalid_component_tool_arguments_as_observation(self):
+        class HypothesisLab(NoemaEnvironment):
+            @tool
+            def test_hypothesis(self, name: str, evidence: str, verdict: str):
+                return {"name": name, "evidence": evidence, "verdict": verdict}
+
+        class IncidentInvestigator(NoemaEnvironment):
+            lab = Component(HypothesisLab)
+
+        investigator = IncidentInvestigator()
+        decisions = iter([
+            {
+                "tool": "lab.test_hypothesis",
+                "args": {
+                    "name": "Credential Rotation Impact",
+                    "evidence": "payment-api 401 invalid_client after credential rotation",
+                },
+            },
+            {"answer": "The tool call needs to be retried with a verdict."},
+        ])
+
+        answer = investigator(
+            "Test the credential hypothesis.",
+            planner=lambda environment, prompt, run: next(decisions),
+        )
+        observation = investigator.last_run.observations[0]
+
+        self.assertEqual(answer, "The tool call needs to be retried with a verdict.")
+        self.assertEqual(observation.tool, "lab.test_hypothesis")
+        self.assertEqual(observation.args, {
+            "name": "Credential Rotation Impact",
+            "evidence": "payment-api 401 invalid_client after credential rotation",
+        })
+        self.assertEqual(observation.result["error"]["type"], "invalid_tool_arguments")
+        self.assertIn("verdict", observation.result["error"]["message"])
+        self.assertIn("test_hypothesis", observation.result["error"]["expected"])
+
+    def test_environment_argument_prompt_shows_required_json_shape(self):
+        class HypothesisLab(NoemaEnvironment):
+            @tool
+            def test_hypothesis(self, name: str, evidence: str, verdict: str):
+                return {"name": name, "evidence": evidence, "verdict": verdict}
+
+        workspace = HypothesisLab()
+        prompt = workspace._argument_prompt(workspace.tool_specs()["test_hypothesis"])
+
+        self.assertIn("Tool signature: test_hypothesis(name: str, evidence: str, verdict: str)", prompt)
+        self.assertIn('"name": "<name>"', prompt)
+        self.assertIn('"evidence": "<evidence>"', prompt)
+        self.assertIn('"verdict": "<verdict>"', prompt)
+        self.assertIn("Include every required key exactly once.", prompt)
+
     def test_environment_llm_action_options_include_component_tools(self):
         class CommentStore(NoemaEnvironment):
             @tool

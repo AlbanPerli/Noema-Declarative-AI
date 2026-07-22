@@ -483,7 +483,7 @@ Notes:
 - Downstream logs show payment-api 401 invalid_client.
 - A service credential was rotated 15 minutes before the failure.
 - Manual retry succeeds after refreshing the payment-api token.
-""", max_steps=16, max_tokens=160)
+""", max_steps=20, max_tokens=160)
 ```
 
 Only `Memory`, `Visible`, `Component`, `@visible`, and `@tool` are projected
@@ -491,6 +491,9 @@ into the LLM environment. Regular Python attributes and methods stay private.
 Component tools are available with qualified names such as
 `evidence.record_fact`, `lab.propose_hypothesis`,
 `console.compare_metric`, and `resolution.draw_conclusion`.
+If a generated tool call has missing or invalid arguments, Noema records an
+error observation and lets the LLM correct the next action instead of crashing
+the Python process.
 
 <details>
   <summary>Execution trace:</summary>
