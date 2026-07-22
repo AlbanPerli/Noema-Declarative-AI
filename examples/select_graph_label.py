@@ -29,9 +29,9 @@ def compact_label(comment):
     Information(f"Comment: {comment}")
 
     graph = SelectGraph("compact-comment-label", separator=" ")
-    graph.transition("start", "sentiment", ["positive", "neutral", "negative"], weight=1.0)
-    graph.transition("sentiment", "intensity", ["weak", "clear", "strong"], weight=0.7)
-    graph.transition("intensity", "end", ["satisfaction", "friction", "request"], weight=0.5)
+    graph.transition("start", "sentiment", ["positive", "neutral", "negative"])
+    graph.transition("sentiment", "intensity", ["weak", "clear", "strong"])
+    graph.transition("intensity", "end", ["satisfaction", "friction", "request"])
 
     result = graph.run(
         "start",

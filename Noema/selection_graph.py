@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import inspect
-from math import prod
 from typing import Any, Callable, Iterable
 
 from .predicates import Predicate, ensure_predicate, value_of
@@ -13,7 +12,6 @@ class SelectGraphTransition:
     source: str
     target: str
     labels: tuple[str, ...]
-    weight: float = 1.0
     when: Predicate | Callable[..., bool] | bool | None = None
 
     def matches(self, context):
@@ -29,7 +27,6 @@ class SelectGraphStep:
     source: str
     target: str
     label: str
-    weight: float
     transition: SelectGraphTransition
 
 
@@ -52,12 +49,6 @@ class SelectGraphResult:
     def text(self):
         return self.graph.separator.join(self.labels)
 
-    @property
-    def weight(self):
-        if not self.steps:
-            return 1.0
-        return prod(step.weight for step in self.steps)
-
 
 class SelectGraph:
     def __init__(self, name, separator=" "):
@@ -66,7 +57,7 @@ class SelectGraph:
         self.transitions: list[SelectGraphTransition] = []
         self.last_result: SelectGraphResult | None = None
 
-    def transition(self, source, target, labels: Iterable[str], weight=1.0, when=None):
+    def transition(self, source, target, labels: Iterable[str], when=None):
         labels = tuple(str(label) for label in labels)
         if not labels:
             raise ValueError("SelectGraph.transition() requires at least one label.")
@@ -74,7 +65,6 @@ class SelectGraph:
             source=str(source),
             target=str(target),
             labels=labels,
-            weight=float(weight),
             when=when,
         )
         self.transitions.append(transition)
@@ -127,7 +117,6 @@ class SelectGraph:
                 source=current,
                 target=transition.target,
                 label=selected_label,
-                weight=transition.weight,
                 transition=transition,
             )
             steps.append(step)
@@ -159,12 +148,10 @@ class SelectGraph:
             f"Current text: {context.get('text', '')}",
             f"Step: {step_index + 1}",
             "Choose exactly one transition label.",
-            "Weighted candidates:",
+            "Candidate transitions:",
         ]
         for label, transition in candidates.items():
-            lines.append(
-                f"- {label} -> {transition.target} (weight: {transition.weight:g})"
-            )
+            lines.append(f"- {label} -> {transition.target}")
         return "\n".join(lines)
 
     def to_mermaid(self):
@@ -174,7 +161,6 @@ class SelectGraph:
             lines.append(f'  {self._node_id(state)}["{_escape(state)}"]')
         for transition in self.transitions:
             label = ", ".join(transition.labels)
-            label = f"{label} / w={transition.weight:g}"
             lines.append(
                 f"  {self._node_id(transition.source)} -->|{_escape(label)}| "
                 f"{self._node_id(transition.target)}"
@@ -211,6 +197,3 @@ def _call_with_optional_context(func, context):
 
 def _escape(value):
     return str(value).replace('"', '\\"')
-
-
-WeightedSelectGraph = SelectGraph

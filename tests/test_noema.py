@@ -20,7 +20,6 @@ if HAS_RUNTIME_DEPS:
         LLM,
         Automaton,
         SelectGraph,
-        WeightedSelectGraph,
         Paragraph,
         Sentence,
         SemPy,
@@ -42,7 +41,6 @@ class TestNoema(unittest.TestCase):
     def test_public_api_imports(self):
         self.assertIsNotNone(Automaton)
         self.assertIsNotNone(SelectGraph)
-        self.assertIs(WeightedSelectGraph, SelectGraph)
         self.assertIs(Word.return_type, str)
         self.assertIs(Int.return_type, int)
         self.assertIs(Float.return_type, float)
@@ -255,10 +253,10 @@ class TestNoema(unittest.TestCase):
             "product": "product output",
         })
 
-    def test_select_graph_lets_llm_choose_weighted_transition_labels(self):
+    def test_select_graph_lets_llm_choose_transition_labels(self):
         graph = SelectGraph("phrase", separator=" ")
-        graph.transition("start", "tone", ["positive", "negative"], weight=0.8)
-        graph.transition("tone", "end", ["signal"], weight=0.5)
+        graph.transition("start", "tone", ["positive", "negative"])
+        graph.transition("tone", "end", ["signal"])
 
         choices = iter(["positive", "signal"])
 
@@ -271,7 +269,6 @@ class TestNoema(unittest.TestCase):
         self.assertEqual(result.path, ["start", "tone", "end"])
         self.assertEqual(result.labels, ["positive", "signal"])
         self.assertEqual(result.text, "positive signal")
-        self.assertEqual(result.weight, 0.4)
 
     def test_select_graph_accepts_noema_value_from_selector(self):
         graph = SelectGraph("phrase")
@@ -307,12 +304,12 @@ class TestNoema(unittest.TestCase):
 
     def test_select_graph_can_render_mermaid(self):
         graph = SelectGraph("phrase")
-        graph.transition("start", "tone", ["positive", "negative"], weight=0.8)
+        graph.transition("start", "tone", ["positive", "negative"])
 
         mermaid = graph.to_mermaid()
 
         self.assertIn("flowchart TD", mermaid)
-        self.assertIn("positive, negative / w=0.8", mermaid)
+        self.assertIn("-->|positive, negative|", mermaid)
 
     def test_llm_can_disable_reasoning(self):
         llm = LLM("model.gguf", reasoning="off")
