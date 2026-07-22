@@ -18,18 +18,27 @@ if HAS_RUNTIME_DEPS:
         ListOf,
         Noema,
         LLM,
+        Automaton,
         Paragraph,
         Sentence,
         SemPy,
         Word,
     )
+    from Noema.BaseGenerator import BaseGenerator
     from Noema.information import Information
     from Noema.llm import close_current_runtime, current_runtime
+
+    class FakeGeneratedValue(BaseGenerator):
+        def __init__(self, identifier, value):
+            super().__init__()
+            self.id = identifier
+            self.value = value
 
 
 @unittest.skipUnless(HAS_RUNTIME_DEPS, "guidance and varname are not installed")
 class TestNoema(unittest.TestCase):
     def test_public_api_imports(self):
+        self.assertIsNotNone(Automaton)
         self.assertIs(Word.return_type, str)
         self.assertIs(Int.return_type, int)
         self.assertIs(Float.return_type, float)
@@ -121,6 +130,126 @@ class TestNoema(unittest.TestCase):
         self.assertEqual(word.value, "Label")
         self.assertIn("regex", mocked_gen.call_args.kwargs)
         self.assertNotIn("stop", mocked_gen.call_args.kwargs)
+
+    def test_generated_values_build_predicates(self):
+        sentiment = FakeGeneratedValue("sentiment", "negative")
+        urgency = FakeGeneratedValue("urgency", "high")
+
+        predicate = (sentiment == "negative") & urgency.in_(["medium", "high"])
+
+        self.assertTrue(predicate.evaluate())
+        sentiment.value = "positive"
+        self.assertFalse(predicate.evaluate())
+
+    def test_automaton_evaluates_conditional_transitions(self):
+        sentiment = FakeGeneratedValue("sentiment", "negative")
+        intent = FakeGeneratedValue("intent", "complaint")
+        graph = Automaton("comment-routing")
+
+        with graph.state("classify"):
+            graph.record(sentiment)
+            graph.record(intent)
+
+        with graph.state("support"):
+            graph.record(FakeGeneratedValue("route", "support"))
+
+        graph.transition(
+            "classify",
+            "support",
+            when=(sentiment == "negative") & intent.in_(["bug_report", "complaint"]),
+        )
+        graph.transition("classify", "positive", default=True)
+
+        result = graph.run("classify")
+
+        self.assertEqual(result.path, ["classify", "support"])
+        self.assertEqual(result.transitions[0].target, "support")
+        self.assertEqual([output.label for output in result.outputs], ["sentiment", "intent", "route"])
+
+    def test_automaton_uses_default_transition_when_conditions_do_not_match(self):
+        sentiment = FakeGeneratedValue("sentiment", "positive")
+        graph = Automaton("comment-routing")
+
+        with graph.state("classify"):
+            graph.record(sentiment)
+
+        graph.transition("classify", "critical", when=sentiment == "negative")
+        graph.transition("classify", "positive", default=True)
+
+        self.assertEqual(graph.run("classify").path, ["classify", "positive"])
+
+    def test_automaton_deferred_states_execute_only_when_reached(self):
+        graph = Automaton("lazy-routing")
+        calls = []
+
+        @graph.state("classify")
+        def classify():
+            calls.append("classify")
+            return {"sentiment": FakeGeneratedValue("sentiment", "negative")}
+
+        @graph.state("critical")
+        def critical(context):
+            calls.append("critical")
+            return {"route": "critical"}
+
+        @graph.state("positive")
+        def positive():
+            calls.append("positive")
+            return {"route": "positive"}
+
+        graph.transition(
+            "classify",
+            "critical",
+            when=lambda context: context["classify"]["sentiment"] == "negative",
+        )
+        graph.transition("classify", "positive", default=True)
+
+        result = graph.run("classify")
+
+        self.assertEqual(result.path, ["classify", "critical"])
+        self.assertEqual(calls, ["classify", "critical"])
+        self.assertEqual(graph.data["critical"]["route"], "critical")
+
+    def test_automaton_can_render_mermaid(self):
+        sentiment = FakeGeneratedValue("sentiment", "positive")
+        graph = Automaton("comment-routing")
+
+        graph.transition("classify", "positive", when=sentiment == "positive")
+
+        mermaid = graph.to_mermaid()
+
+        self.assertIn("flowchart TD", mermaid)
+        self.assertIn("classify", mermaid)
+        self.assertIn("positive", mermaid)
+        self.assertIn("sentiment == 'positive'", mermaid)
+
+    def test_parallel_group_runs_registered_branches_sequentially(self):
+        graph = Automaton("expert-review")
+
+        with graph.parallel("review") as review:
+            review.add("psychology", lambda: "psychology output")
+            review.add("product", lambda: "product output")
+
+        outputs = review.run()
+
+        self.assertEqual(outputs["psychology"], "psychology output")
+        self.assertEqual(outputs["product"], "product output")
+        self.assertIn("review.psychology", graph.states)
+        self.assertIn("review.product", graph.states)
+
+    def test_parallel_group_can_run_registered_branches_in_threads(self):
+        graph = Automaton("expert-review")
+
+        with graph.parallel("review", mode="threads", max_workers=2) as review:
+            review.add("psychology", lambda: "psychology output")
+            review.add("product", lambda: "product output")
+
+        outputs = review.run()
+
+        self.assertEqual(dict(outputs), {
+            "psychology": "psychology output",
+            "product": "product output",
+        })
 
     def test_llm_can_disable_reasoning(self):
         llm = LLM("model.gguf", reasoning="off")

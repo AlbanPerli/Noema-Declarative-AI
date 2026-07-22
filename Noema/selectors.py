@@ -29,6 +29,7 @@ class Select(Generator):
         self.value = res
         self.noesis = noesis
         current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        self._record_automaton_value()
         if current_runtime().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {self.options})'}\033[0m)")
             
@@ -65,6 +66,7 @@ class SelectOrNone(Generator):
             self.value = res
         self.noesis = noesis
         current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        self._record_automaton_value()
         if current_runtime().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {self.options})'}\033[0m)")
         

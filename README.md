@@ -271,6 +271,76 @@ synthesis, abs = comment_evaluation("This llm is very good at following instruct
 print(synthesis)
 ```
 
+### Declarative Automata
+
+`Automaton` lets you compose generated values into a decision graph. Generated
+objects such as `Select`, `Sentence`, and `Paragraph` can be used directly in
+conditions:
+
+```python
+from Noema import *
+
+graph = Automaton("comment-routing")
+
+@graph.state("classify")
+def classify():
+    sentiment = Select(
+        "Classify the sentiment.",
+        options=["positive", "neutral", "negative"],
+    )
+    intent = Select(
+        "Classify the intent.",
+        options=["praise", "bug_report", "feature_request", "complaint"],
+    )
+    return {"sentiment": sentiment, "intent": intent}
+
+@graph.state("support")
+def support(context):
+    intent = context["classify"]["intent"].value
+    return Paragraph(
+        f"Draft a short support response for this intent: {intent}."
+    )
+
+@graph.state("positive")
+def positive():
+    return Sentence("Extract the main product insight.")
+
+graph.transition(
+    "classify",
+    "support",
+    when=lambda context: (
+        context["classify"]["sentiment"] == "negative"
+    ) & context["classify"]["intent"].in_(["bug_report", "complaint"]),
+)
+graph.transition("classify", "positive", default=True)
+
+result = graph.run("classify")
+print(result.path)
+print(graph.to_mermaid())
+```
+
+You can also record already executed Python/Noema blocks:
+
+```python
+with graph.state("classify"):
+    sentiment = Select("Sentiment?", options=["positive", "negative"])
+    intent = Select("Intent?", options=["praise", "complaint"])
+
+graph.transition("classify", "support", when=intent == "complaint")
+```
+
+Parallel branches are explicit callables. By default they run sequentially,
+which is safer for a shared llama.cpp runtime. Use `mode="threads"` only when
+branches use independent runtimes or thread-safe work.
+
+```python
+with graph.parallel("expert-review") as review:
+    review.add("psychology", lambda: Sentence("Analyse the emotional signal."))
+    review.add("product", lambda: Sentence("Analyse the product signal."))
+
+outputs = review.run()
+```
+
 <details>
   <summary>LLM output:</summary>
 [INST]

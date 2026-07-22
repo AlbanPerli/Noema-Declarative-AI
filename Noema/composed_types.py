@@ -64,6 +64,7 @@ class ListOf(BaseGenerator):
         self.value = res
         self.noesis = noesis
         runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        self._record_automaton_value()
         if runtime.verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({local_hint})'}\033[0m)")    
 

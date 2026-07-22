@@ -54,6 +54,7 @@ class SemPy(Generator):
             self.value = fallback
             self.noema = "Deterministic Python fallback."
             current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+            self._record_automaton_value()
             if current_runtime().verbose:
                 print(f"\033[93m{self.noema}\n Returns:\n{self.value}\033[0m")
             return self
@@ -96,6 +97,7 @@ Produce only the code, no example or explanation.
         exec(function_str, local_context)
         self.value = local_context["noema_func"](*args, **kwargs)
         runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        self._record_automaton_value()
         if runtime.verbose:
             print(f"\033[93m{self.noema}\n Returns:\n{self.value}\nFor parametters:{formated_params}\033[0m\n(\033[94m{self.noesis + f'({self.hint})'}\033[0m)")
         return self

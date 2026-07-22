@@ -11,6 +11,7 @@ class Information(Generator):
         self.noema = self.value
         self.noesis = noesis
         current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        self._record_automaton_value()
         if current_runtime().verbose:
             hint = f"({self.hint})" if self.hint is not None else ""
             print(f"{self.id.replace('self.', '')} = \033[94m{self.noema}{hint}\033[0m")
