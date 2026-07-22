@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 
-from Noema import LLM
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,10 +37,21 @@ def model_path(default_filename):
     return path
 
 
-def create_llm(default_filename, **kwargs):
-    verbose = _env_flag("NOEMA_VERBOSE", "1")
-    kwargs.setdefault("context_size", int(os.environ.get("NOEMA_CONTEXT_SIZE", "4096")))
-    kwargs.setdefault("n_gpu_layers", int(os.environ.get("NOEMA_N_GPU_LAYERS", "-1")))
-    kwargs.setdefault("enable_monitoring", _env_flag("NOEMA_ENABLE_MONITORING", "0"))
-    kwargs.setdefault("suppress_startup_logs", _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", "1"))
-    return LLM(str(model_path(default_filename)), verbose=verbose, **kwargs)
+def env_verbose(default="1"):
+    return _env_flag("NOEMA_VERBOSE", default)
+
+
+def env_context_size(default="4096"):
+    return int(os.environ.get("NOEMA_CONTEXT_SIZE", default))
+
+
+def env_n_gpu_layers(default="-1"):
+    return int(os.environ.get("NOEMA_N_GPU_LAYERS", default))
+
+
+def env_enable_monitoring(default="0"):
+    return _env_flag("NOEMA_ENABLE_MONITORING", default)
+
+
+def env_suppress_startup_logs(default="1"):
+    return _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", default)

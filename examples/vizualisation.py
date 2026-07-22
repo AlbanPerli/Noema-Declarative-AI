@@ -1,8 +1,23 @@
 import _bootstrap
 from Noema import *
-from _config import create_llm
+from _config import (
+    env_context_size,
+    env_enable_monitoring,
+    env_n_gpu_layers,
+    env_suppress_startup_logs,
+    env_verbose,
+    model_path,
+)
 
-llm = create_llm("granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", write_graph=True)
+llm = LLM(
+    model_path("granite-3.1-3b-a800m-instruct-Q4_K_M.gguf"),
+    verbose=env_verbose(),
+    context_size=env_context_size(),
+    n_gpu_layers=env_n_gpu_layers(),
+    enable_monitoring=env_enable_monitoring(),
+    suppress_startup_logs=env_suppress_startup_logs(),
+    write_graph=True,
+)
 
 
 @Noema(llm)

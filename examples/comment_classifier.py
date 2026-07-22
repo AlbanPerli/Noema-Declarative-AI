@@ -1,8 +1,22 @@
 import _bootstrap
 from Noema import *
-from _config import create_llm
+from _config import (
+    env_context_size,
+    env_enable_monitoring,
+    env_n_gpu_layers,
+    env_suppress_startup_logs,
+    env_verbose,
+    model_path,
+)
 
-llm = create_llm("EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf")
+llm = LLM(
+    model_path("EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf"),
+    verbose=env_verbose(),
+    context_size=env_context_size(),
+    n_gpu_layers=env_n_gpu_layers(),
+    enable_monitoring=env_enable_monitoring(),
+    suppress_startup_logs=env_suppress_startup_logs(),
+)
 
 
 @Noema(llm)

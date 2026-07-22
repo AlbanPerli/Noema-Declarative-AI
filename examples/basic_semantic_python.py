@@ -1,8 +1,22 @@
 import _bootstrap
 from Noema import *
-from _config import create_llm
+from _config import (
+    env_context_size,
+    env_enable_monitoring,
+    env_n_gpu_layers,
+    env_suppress_startup_logs,
+    env_verbose,
+    model_path,
+)
 
-llm = create_llm("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf")
+llm = LLM(
+    model_path("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf"),
+    verbose=env_verbose(),
+    context_size=env_context_size(),
+    n_gpu_layers=env_n_gpu_layers(),
+    enable_monitoring=env_enable_monitoring(),
+    suppress_startup_logs=env_suppress_startup_logs(),
+)
 
 
 @Noema(llm)
