@@ -1,6 +1,38 @@
 import json
+import gc
+import os
 import textwrap
+import warnings
+from contextlib import contextmanager
 from guidance import models,gen,select,capture
+
+
+def _env_flag(name, default):
+    return os.environ.get(name, default) not in {"0", "false", "False"}
+
+
+@contextmanager
+def _suppress_native_startup_logs(enabled):
+    if not enabled:
+        yield
+        return
+
+    original_stderr = os.dup(2)
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    try:
+        os.dup2(devnull, 2)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r"Chat template .*",
+                category=UserWarning,
+                module=r"guidance\.models\._engine\._tokenizer",
+            )
+            yield
+    finally:
+        os.dup2(original_stderr, 2)
+        os.close(original_stderr)
+        os.close(devnull)
 
 class SingletonMeta(type):
     _instances = {}
@@ -12,16 +44,34 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 class Subject(metaclass=SingletonMeta):
-    def __init__(self, model_path:str, context_size = 512*8, verbose = False, write_graph = False):
+    def __init__(
+        self,
+        model_path: str,
+        context_size=512 * 8,
+        verbose=False,
+        write_graph=False,
+        n_gpu_layers=-1,
+        enable_monitoring=None,
+        suppress_startup_logs=None,
+        **llama_cpp_kwargs,
+    ):
+        if enable_monitoring is None:
+            enable_monitoring = _env_flag("NOEMA_ENABLE_MONITORING", "0")
+        if suppress_startup_logs is None:
+            suppress_startup_logs = _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", "0")
+
         self.verbose = verbose
         self.model_path = model_path
         self.write_graph = write_graph
-        self.llm = models.LlamaCpp(
-            self.model_path,
-            n_gpu_layers=99,
-            n_ctx=context_size,
-            echo=False,
-        )
+        with _suppress_native_startup_logs(suppress_startup_logs):
+            self.llm = models.LlamaCpp(
+                self.model_path,
+                n_gpu_layers=n_gpu_layers,
+                n_ctx=context_size,
+                echo=False,
+                enable_monitoring=enable_monitoring,
+                **llama_cpp_kwargs,
+            )
         self.structure = []
         self.stack = [self.structure]
 
@@ -77,7 +127,7 @@ class Subject(metaclass=SingletonMeta):
                     if len(t) > 50:
                         t = textwrap.fill(t, width=50)+"<br>"
                     text_str += t
-                return text.replace("\n", "<br>").replace("'", "\\'").replace('"', '\\"')
+                return text_str.replace("\n", "<br>").replace("'", "\\'").replace('"', '\\"')
             
             if type(text) != str:
                 return text
@@ -222,3 +272,31 @@ class Subject(metaclass=SingletonMeta):
     
     def noema(self):
         return str(self.llm)
+
+    def close(self):
+        llm = getattr(self, "llm", None)
+        if llm is None:
+            return
+
+        interpreter = getattr(llm, "_interpreter", None)
+        engine = getattr(interpreter, "engine", None)
+        context = getattr(engine, "_context", None)
+        model_obj = getattr(engine, "model_obj", None)
+
+        if context is not None and hasattr(context, "__del__"):
+            context.__del__()
+
+        if model_obj is not None and hasattr(model_obj, "close"):
+            model_obj.close()
+
+        self.llm = None
+        if engine is not None:
+            engine.model_obj = None
+            engine._context = None
+        gc.collect()
+
+    @classmethod
+    def close_shared(cls):
+        instance = SingletonMeta._instances.get(cls)
+        if instance is not None:
+            instance.close()

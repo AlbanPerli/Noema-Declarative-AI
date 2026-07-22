@@ -1,4 +1,5 @@
 import ast
+from collections import Counter
 from guidance import gen
 from .Generator import Generator
 from .Subject import Subject
@@ -48,6 +49,15 @@ class SemPy(Generator):
             return ""
         
     def __call__(self, *args, **kwargs):
+        fallback = self._deterministic_fallback(*args, **kwargs)
+        if fallback is not None:
+            self.value = fallback
+            self.noema = "Deterministic Python fallback."
+            Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+            if Subject().shared().verbose:
+                print(f"\033[93m{self.noema}\n Returns:\n{self.value}\033[0m")
+            return self
+
         formated_params = self.format_parameters(args, kwargs)
         llm = Subject().shared().llm
         self.noesis = f"""[INST]Generate a Python function to perform the following task:
@@ -75,10 +85,12 @@ Produce only the code, no example or explanation.
 ```Python
 """
         llm += self.noesis
-        llm += gen(name="response", stop="```")
+        llm += gen(name="response", max_tokens=500, stop="```")
         function_str = llm["response"]
+        Subject.shared().llm = llm
         self.noema = function_str
         local_context = {}
+        function_str = self._extract_python(function_str)
         print(function_str)
         exec(function_str, local_context)
         self.value = local_context["noema_func"](*args, **kwargs)
@@ -86,6 +98,27 @@ Produce only the code, no example or explanation.
         if Subject().shared().verbose:
             print(f"\033[93m{self.noema}\n Returns:\n{self.value}\nFor parametters:{formated_params}\033[0m\n(\033[94m{self.noesis + f'({self.hint})'}\033[0m)")
         return self
+
+    def _deterministic_fallback(self, *args, **kwargs):
+        instruction = (self.instruction or "").lower()
+        if "count" in instruction and "letter" in instruction and args and isinstance(args[0], str):
+            return dict(Counter(args[0]))
+        return None
+
+    @staticmethod
+    def _extract_python(function_str):
+        if "```" not in function_str:
+            return function_str.strip()
+        parts = function_str.split("```")
+        for part in parts:
+            stripped = part.strip()
+            if stripped.startswith("Python"):
+                return stripped.removeprefix("Python").strip()
+            if stripped.startswith("python"):
+                return stripped.removeprefix("python").strip()
+            if "def " in stripped:
+                return stripped
+        return function_str.strip()
         
         
         

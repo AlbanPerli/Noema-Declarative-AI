@@ -21,6 +21,35 @@ pip install Noema
 
 Install [llama-cpp-python](https://github.com/abetlen/llama-cpp-python?tab=readme-ov-file#supported-backends) using the correct backend.
 
+## Validate the installation
+
+From a local checkout, run:
+
+```bash
+python scripts/check_installation.py
+```
+
+This creates a temporary virtual environment, installs Noema from the checkout,
+and verifies that `guidance`, `llama-cpp-python`, `varname`, and the public
+Noema API import correctly. It does not load a `.gguf` model.
+
+## Run examples from VS Code
+
+1. Select a Python interpreter in VS Code.
+2. Run the task `Noema: install package`.
+3. Put your `.gguf` models in `../Models`, or set `NOEMA_MODEL_PATH` /
+   `NOEMA_MODEL_DIR` in your local environment.
+4. Open the Run and Debug panel and choose one of the `Noema: ...` launch
+   configurations.
+
+The launch configurations set `PYTHONPATH` to the workspace root, so examples
+import the local checkout without requiring a published package.
+
+Examples call `Subject.close_shared()` before exiting. By default they also set
+a fast process exit after successful completion to avoid late Metal finalizer
+crashes in `llama.cpp`; set `NOEMA_EXAMPLE_FAST_EXIT=0` to disable this while
+debugging shutdown behavior.
+
 
 
 # Basic:
@@ -443,4 +472,3 @@ print(synthesis)
 <p align="center">
   <img src="visu.png" alt="Visualization example"/>
 </p>
-

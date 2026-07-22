@@ -11,6 +11,7 @@ from .atomic_types import *
 from .substring import *
 from .composed_types import *
 from .semPy import *
+from .programming_langugages import *
 
 
 class ClassInstanceFinder(ast.NodeVisitor):
@@ -111,10 +112,17 @@ def Noema(func):
         source_code = inspect.getsource(func)
         source_code = textwrap.dedent(source_code)
         # TODO: Add dynamic class loading
-        classes_to_find = ['Generator', 'Sentence', 'Email', 'Paragraph', 
-                           'Name', 'Address', 'Phone', 'Date', 'Time', 
-                           'Number', 'Select', 'SelectOrNone', 'Substring', 
-                           'Information', 'Free', 'ListOf', 'SemPy']
+        classes_to_find = [
+            'Generator', 'Information', 'Sentence', 'Paragraph', 'Free',
+            'Word', 'Int', 'Float', 'Bool', 'Date', 'DateTime', 'Time',
+            'Phone', 'Email', 'Select', 'SelectOrNone', 'Substring',
+            'ListOf', 'SemPy',
+            'Python', 'Swift', 'Java', 'C', 'Cpp', 'CSharp',
+            'JavaScript', 'TypeScript', 'Ruby', 'PHP', 'Go', 'Rust',
+            'Kotlin', 'Dart', 'Scala', 'R', 'MATLAB', 'Julia', 'Lua',
+            'Perl', 'Shell', 'PowerShell', 'Bash', 'COBOL', 'Fortran',
+            'Assembly', 'Verilog', 'VHDL',
+        ]
         tree = ast.parse(source_code)
         finder = ClassInstanceFinder(classes_to_find)
         finder.visit(tree)

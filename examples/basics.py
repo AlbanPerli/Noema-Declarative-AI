@@ -1,7 +1,6 @@
+import _bootstrap
 from Noema import *
-
-# Create a subject (LLM)
-Subject("../Models/Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf", verbose=True) # Llama cpp model
+from _config import create_subject, run_example
 
 # Create a way of thinking
 class SimpleWayOfThinking:
@@ -33,8 +32,13 @@ class SimpleWayOfThinking:
         return conclusion.value # return the conclusion value
     
  
-swot = SimpleWayOfThinking("How to write a good iOS application?")
-conclusion = swot.think()
-print(conclusion)
-print(Subject().shared().noema())
+def main():
+    # Create a subject (LLM)
+    create_subject("Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf") # Llama cpp model
+    swot = SimpleWayOfThinking("How to write a good iOS application?")
+    conclusion = swot.think()
+    print(conclusion)
+    print(Subject.shared().noema())
 
+
+run_example(main)

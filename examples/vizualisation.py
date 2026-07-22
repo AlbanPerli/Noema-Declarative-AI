@@ -1,7 +1,6 @@
+import _bootstrap
 from Noema import *
-
-# Create a new Subject
-Subject("../Models/granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", verbose=True, write_graph=True)
+from _config import create_subject, run_example
 
 @Noema
 def analysis_evaluation(analysis):
@@ -46,5 +45,11 @@ def comment_evaluation(comment):
   print(sub.value)
   return synthesis.value
 
-synthesis = comment_evaluation("This llm is very good!")
-print(synthesis)
+def main():
+    # Create a new Subject
+    create_subject("granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", write_graph=True)
+    synthesis = comment_evaluation("This llm is very good!")
+    print(synthesis)
+
+
+run_example(main)

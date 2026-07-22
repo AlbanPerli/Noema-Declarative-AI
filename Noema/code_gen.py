@@ -20,7 +20,7 @@ class CodeGenerator(Generator):
         llm += " Produce only the code, no example or explanation." + "\n"  
         llm += display_var + " " + f" ```{self.__class__.__name__}\n" + gen(stop="```",name="response") + "\n"
         res = llm["response"]
-        Subject().shared().llm += display_var + " " + res + "\n"
+        Subject.shared().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis

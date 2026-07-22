@@ -24,7 +24,7 @@ class Select(Generator):
         llm += noesis 
         llm += display_var + " " + select(self.options,name='response') + "\n"
         res = llm["response"]
-        Subject().shared().llm += display_var + " " + res + "\n"
+        Subject.shared().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
@@ -57,7 +57,7 @@ class SelectOrNone(Generator):
         llm += noesis 
         llm += display_var + " " + select(self.options,name='response') + "\n"
         res = llm["response"]
-        Subject().shared().llm += display_var + " " + res + "\n"
+        Subject.shared().llm = llm
         self.noema = self.value
         if res == "None":
             self.value = None

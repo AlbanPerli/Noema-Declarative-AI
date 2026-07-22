@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Noema: install package",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "-m",
+        "pip",
+        "install",
+        "-e",
+        "."
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Noema: check installation",
+      "type": "shell",
+      "command": "${command:python.interpreterPath}",
+      "args": [
+        "scripts/check_installation.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

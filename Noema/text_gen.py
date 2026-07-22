@@ -3,13 +3,13 @@ from .Subject import Subject
 from guidance import gen
 
 class Sentence(Generator):
-    regex = "[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-…_\$]*[.!?]$"
+    regex = r"[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-…_\$]*[.!?]$"
     hint = "Response format: a sentence"
     return_type = str
     stops = ["\n"]
     
 class Paragraph(Generator):
-    regex = "[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-\.…\\n_\$]*[.!?]$"
+    regex = r"[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-\.…\\n_\$]*[.!?]$"
     hint = "Response format: a paragraph"
     return_type = str
     stops = ["\n"]
@@ -30,7 +30,7 @@ class Free(Generator):
         llm += noesis
         llm += display_var + " " + gen(name="response",max_tokens=max_tokens) + "\n"
         res = llm["response"]
-        Subject().shared().llm += display_var + " " + res + "\n"
+        Subject.shared().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis

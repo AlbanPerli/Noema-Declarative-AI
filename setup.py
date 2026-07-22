@@ -15,13 +15,14 @@ setup(
     url='https://github.com/AlbanPerli/Noema-Declarative-AI',
     packages=find_packages(),
     install_requires=[
-        'guidance==0.1.15',
-        'varname'
+        'guidance>=0.3.1,<0.4',
+        'llama-cpp-python>=0.3.34,<0.4',
+        'varname>=0.13,<0.15',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.8',
+    python_requires='>=3.10',
 )

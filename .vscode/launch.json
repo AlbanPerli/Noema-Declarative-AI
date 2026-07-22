@@ -1,0 +1,100 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Noema: basics",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/examples/basics.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NOEMA_MODEL_DIR": "../Models",
+        "NOEMA_VERBOSE": "1",
+        "NOEMA_CONTEXT_SIZE": "4096",
+        "NOEMA_N_GPU_LAYERS": "-1",
+        "NOEMA_ENABLE_MONITORING": "0",
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
+        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Noema: comment classifier",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/examples/comment_classifier.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NOEMA_MODEL_DIR": "../Models",
+        "NOEMA_VERBOSE": "1",
+        "NOEMA_CONTEXT_SIZE": "4096",
+        "NOEMA_N_GPU_LAYERS": "-1",
+        "NOEMA_ENABLE_MONITORING": "0",
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
+        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Noema: semantic python",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/examples/basic_semantic_python.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NOEMA_MODEL_DIR": "../Models",
+        "NOEMA_VERBOSE": "1",
+        "NOEMA_CONTEXT_SIZE": "4096",
+        "NOEMA_N_GPU_LAYERS": "-1",
+        "NOEMA_ENABLE_MONITORING": "0",
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
+        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Noema: visualisation",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/examples/vizualisation.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NOEMA_MODEL_DIR": "../Models",
+        "NOEMA_VERBOSE": "1",
+        "NOEMA_CONTEXT_SIZE": "4096",
+        "NOEMA_N_GPU_LAYERS": "-1",
+        "NOEMA_ENABLE_MONITORING": "0",
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
+        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "Noema: current file",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "NOEMA_MODEL_DIR": "../Models",
+        "NOEMA_VERBOSE": "1",
+        "NOEMA_CONTEXT_SIZE": "4096",
+        "NOEMA_N_GPU_LAYERS": "-1",
+        "NOEMA_ENABLE_MONITORING": "0",
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
+        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

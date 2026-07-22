@@ -1,7 +1,6 @@
+import _bootstrap
 from Noema import *
-
-# Create a new Subject
-Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
+from _config import create_subject, run_example
 
 @Noema
 def comment_evaluation(comment):
@@ -21,7 +20,13 @@ def comment_evaluation(comment):
   print(f"Synthesis: {synthesis.value} is {qualify_synthesis.value}")
   return synthesis.value, analyse_by_specialists
 
-synthesis, abs = comment_evaluation("This llm is very good!")
+def main():
+  # Create a new Subject
+  create_subject("EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf")
+  synthesis, abs = comment_evaluation("This llm is very good!")
 
-print(synthesis)
-print(Subject.shared().noema())
+  print(synthesis)
+  print(Subject.shared().noema())
+
+
+run_example(main)

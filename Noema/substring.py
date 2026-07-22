@@ -18,7 +18,7 @@ class Substring(Generator):
         llm += noesis
         llm += display_var + " " + substring(self.value, name='response') + "\n"
         res = llm["response"]
-        Subject().shared().llm += display_var + " " + res + "\n"
+        Subject.shared().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis

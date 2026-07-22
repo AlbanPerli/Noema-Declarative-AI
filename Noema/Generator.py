@@ -7,12 +7,13 @@ def noema_generator(cls):
     class Wrapped(cls):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            original_class_type = self.__class__
+            if hasattr(self, 'var') and self.var is not None:
+                self.id = self.var.replace("self.", "")
+                self._value = f"#{self.id.upper()}:"
+                return
             self.id = varname()
             self.id = self.id.replace("self.", "")
-            if hasattr(self, 'var') and self.var is not None:
-                self._value = f"#{self.var.upper()}:"
-            elif hasattr(self, 'value') and self.value is not None:
+            if hasattr(self, 'value') and self.value is not None:
                 self.execute()
 
         def __str__(self):
@@ -54,7 +55,7 @@ class Generator(BaseGenerator):
         else:
             llm += display_var + " " + gen(regex=self.regex, stop=self.stops, name="response") + "\n"
         res = llm["response"]
-        Subject().shared().llm += display_var + " " + res + "\n"
+        Subject.shared().llm = llm
         self.noema = self.value
         if self.return_type == bool:
             self.value = True if res == "True" else False
@@ -75,5 +76,3 @@ class Generator(BaseGenerator):
 #         super().__init__(value)
 #         self.header = header
 #         self.body = body
-
-
