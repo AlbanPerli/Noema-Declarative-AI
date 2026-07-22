@@ -2,7 +2,6 @@ import _bootstrap
 from Noema import *
 from _config import (
     env_context_size,
-    env_enable_monitoring,
     env_fast_exit,
     env_n_gpu_layers,
     env_suppress_startup_logs,
@@ -10,53 +9,70 @@ from _config import (
     model_path,
 )
 
-llm = LLM("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf")
+
+llm = LLM(
+    model_path("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf"),
+    context_size=env_context_size(),
+    n_gpu_layers=env_n_gpu_layers(),
+    suppress_startup_logs=env_suppress_startup_logs(),
+    verbose=env_verbose(),
+    fast_exit=env_fast_exit(),
+    reasoning="off",
+)
+
 
 @Noema(llm)
-def analysis_evaluation(analysis):
+def hypothesis_score(hypothesis):
     """
-    You are a specialist of analysis evaluation.
-    You produce a numerical evaluation of the analysis, 0 is bad, 10 is good.
-    Good means that the analysis is relevant and useful.
-    Bad means that the analysis is not relevant and not useful.
+    You evaluate how well an incident hypothesis is supported by the available
+    evidence. 0 means unsupported, 10 means strongly supported.
     """
-    analysis_to_evaluate = Information(f"{analysis}")
-    evaluation = Float("Evaluation of the analysis, between 0 and 10")
-    return evaluation.value
+    hypothesis_to_evaluate = Information(f"{hypothesis}")
+    score = Float("Score the hypothesis support, between 0 and 10.")
+    return score.value
+
 
 @Noema(llm)
-def comment_note_evaluation(analysis):
+def hypothesis_risk_note(score):
     """
-    You are a specialist of evaluation commenting.
-    You always produce a deep analysis of the comment.
+    You explain what a hypothesis score implies for operational risk.
     """
-    analysis_to_evaluate = Information(f"{analysis}")
-    comment = Sentence("Commenting the analysis")
-    return comment.value
+    score_to_explain = Information(f"{score}")
+    note = Sentence("Explain the operational risk implied by this score.")
+    return note.value
+
 
 @Noema(llm)
-def comment_evaluation(comment):
-  """
-  You are a specialist of comment analysis.
-  You always produce a deep analysis of the comment.
-  """
-  comment_to_analyse = Information(f"{comment}")
-  specialists = ["Psychologist", "Sociologist", "Linguist", "Philosopher"]
-  analyse_by_specialists = {}
-  for specialist in specialists:
-    analysis = Sentence(f"Analysing the comment as a {specialist}")
-    analyse_by_specialists[specialist] = analysis.value
-    evaluation = analysis_evaluation(analysis.value)
-    comment_note_evaluation_res = comment_note_evaluation(evaluation)
-    improvements = ListOf(Sentence, "List 4 improvements")
-  
-  synthesis = Paragraph("Providing a synthesis of the analysis.")
-  sub = Substring(f"Extracting synthesis comment from {synthesis.value}")
-  print(sub.value)
-  return synthesis.value
+def incident_diagnosis(report):
+    """
+    You are an incident lead.
+    You compare expert hypotheses and converge toward a root-cause conclusion.
+    """
+    incident_report = Information(f"{report}")
+    specialists = ["SRE", "Security engineer", "Backend engineer"]
+    hypotheses = {}
+
+    for specialist in specialists:
+        hypothesis = Sentence(f"Formulate a causal hypothesis as a {specialist}.")
+        hypotheses[specialist] = hypothesis.value
+        score = hypothesis_score(hypothesis.value)
+        risk_note = hypothesis_risk_note(score)
+        checks = ListOf(Sentence, "List three concrete checks for this hypothesis.")
+
+    synthesis = Paragraph("Synthesize the strongest hypothesis and the decisive evidence.")
+    root_cause = Substring(f"Extract the root cause from this synthesis: {synthesis.value}")
+    print(root_cause.value)
+    return synthesis.value
+
 
 def main():
-    synthesis = comment_evaluation("This llm is very good!")
+    synthesis = incident_diagnosis(
+        """
+        Nightly invoice export failed for every tenant at 02:05. The scheduler
+        started normally, payment-api returned 401 invalid_client after a
+        credential rotation, and retry succeeds after refreshing the token.
+        """
+    )
     print(synthesis)
 
 

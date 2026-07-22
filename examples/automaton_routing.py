@@ -22,43 +22,41 @@ llm = LLM(
 
 
 @Noema(llm)
-def route_comment(comment):
+def route_incident(report):
     """
-    You classify a user comment and route it to the right handling path.
+    You classify an operational incident and route it to the right handling path.
     Produce concise, non-repetitive outputs.
     """
-    graph = Automaton("comment-routing")
+    graph = Automaton("incident-routing")
 
     @graph.state("classify")
     def classify():
-        Information(f"Comment: {comment}")
-        sentiment = Select(
-            "Classify the sentiment.",
-            options=["positive", "neutral", "negative"],
+        Information(f"Incident report: {report}")
+        severity = Select(
+            "Classify the incident severity.",
+            options=["low", "medium", "high"],
         )
-        intent = Select(
-            "Classify the intent.",
-            options=["praise", "bug_report", "feature_request", "complaint"],
+        domain = Select(
+            "Classify the most likely failing domain.",
+            options=["auth", "queue", "scheduler", "dependency"],
         )
-        return {"sentiment": sentiment, "intent": intent}
+        return {"severity": severity, "domain": domain}
 
-    @graph.state("support")
-    def support(context):
-        intent = context["classify"]["intent"].value
-        reply = Paragraph(f"Draft a short support response for this intent: {intent}.")
-        return reply
+    @graph.state("mitigate")
+    def mitigate(context):
+        domain = context["classify"]["domain"].value
+        return Paragraph(f"Draft an immediate mitigation for a {domain} incident.")
 
-    @graph.state("product")
-    def product():
-        insight = Sentence("Extract the main product insight from the comment.")
-        return insight
+    @graph.state("investigate")
+    def investigate():
+        return Sentence("Extract the next diagnostic question to reduce uncertainty.")
 
     graph.transition(
         "classify",
-        "support",
-        when=lambda context: context["classify"]["intent"].in_(["bug_report", "complaint"]),
+        "mitigate",
+        when=lambda context: context["classify"]["severity"] == "high",
     )
-    graph.transition("classify", "product", default=True)
+    graph.transition("classify", "investigate", default=True)
 
     result = graph.run("classify")
     print(graph.to_mermaid())
@@ -66,7 +64,10 @@ def route_comment(comment):
 
 
 def main():
-    path = route_comment("This llm is very good!")
+    path = route_incident(
+        "Invoice export failed for all tenants after a credential rotation; "
+        "payment-api returns 401 invalid_client and the queue is growing."
+    )
     print(path)
 
 

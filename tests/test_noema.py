@@ -1098,8 +1098,8 @@ class TestNoema(unittest.TestCase):
         llama_cpp.return_value.close.assert_not_called()
         self.assertIsNone(subject.llm)
 
-    def test_comment_classifier_keeps_modern_model_defaults(self):
-        with open("examples/comment_classifier.py", encoding="utf-8") as example:
+    def test_incident_diagnosis_keeps_modern_model_defaults(self):
+        with open("examples/incident_diagnosis.py", encoding="utf-8") as example:
             content = example.read()
 
         self.assertNotIn("flash_attn=False", content)

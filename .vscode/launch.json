@@ -22,11 +22,11 @@
       "justMyCode": true
     },
     {
-      "name": "Noema: comment classifier",
+      "name": "Noema: incident diagnosis",
       "type": "python",
       "request": "launch",
       "python": "${workspaceFolder}/.venv-metal/bin/python",
-      "program": "${workspaceFolder}/examples/comment_classifier.py",
+      "program": "${workspaceFolder}/examples/incident_diagnosis.py",
       "cwd": "${workspaceFolder}",
       "env": {
         "PYTHONPATH": "${workspaceFolder}",
@@ -62,7 +62,7 @@
       "justMyCode": true
     },
     {
-      "name": "Noema: visualisation",
+      "name": "Noema: diagnosis visualisation",
       "type": "python",
       "request": "launch",
       "python": "${workspaceFolder}/.venv-metal/bin/python",

@@ -1,214 +1,263 @@
 import _bootstrap
 from Noema import *
-from _config import model_path
+from _config import (
+    env_context_size,
+    env_fast_exit,
+    env_n_gpu_layers,
+    env_suppress_startup_logs,
+    env_verbose,
+    model_path,
+)
 
 
 llm = LLM(
     model_path("/Users/al/Documents/IA/Models/LLM/gemma4/gemma-4-E4B-it-Q4_K_M.gguf"),
+    context_size=env_context_size("32000"),
+    n_gpu_layers=env_n_gpu_layers(),
+    suppress_startup_logs=env_suppress_startup_logs(),
+    verbose=env_verbose(),
+    fast_exit=env_fast_exit(),
+    reasoning="off",
 )
 
 
-class FeedbackAnalyzer(NoemaEnvironment):
-    """Extracts actionable product signals from raw user feedback."""
+class EvidenceNotebook(NoemaEnvironment):
+    """Stores observed facts and constraints gathered during an investigation."""
 
-    product_area = Visible("local LLM orchestration and developer experience")
+    facts = Memory(default_factory=list)
+    constraints = Memory(default_factory=list)
 
     @tool
-    def extract_signals(self, comment: str):
-        text = comment.lower()
-        positive_terms = ["good", "great", "fast", "useful", "powerful", "love"]
-        negative_terms = ["bad", "slow", "crash", "broken", "confusing", "wrong"]
-        request_terms = ["could", "should", "need", "want", "missing", "add"]
-
-        positive_score = sum(term in text for term in positive_terms)
-        negative_score = sum(term in text for term in negative_terms)
-        request_score = sum(term in text for term in request_terms)
-
-        if positive_score > negative_score:
-            sentiment = "positive"
-        elif negative_score > positive_score:
-            sentiment = "negative"
-        else:
-            sentiment = "neutral"
-
-        if negative_score:
-            intent = "risk"
-        elif request_score:
-            intent = "feature_request"
-        else:
-            intent = "validation"
-
-        intensity = "strong" if max(positive_score, negative_score, request_score) >= 2 else "clear"
+    def record_fact(self, source: str, observation: str):
+        fact = {
+            "source": source,
+            "observation": observation,
+        }
+        self.facts.append(fact)
         return {
-            "sentiment": sentiment,
-            "intent": intent,
-            "intensity": intensity,
-            "evidence": comment,
-            "matched_terms": {
-                "positive": [term for term in positive_terms if term in text],
-                "negative": [term for term in negative_terms if term in text],
-                "request": [term for term in request_terms if term in text],
-            },
+            "fact": fact,
+            "fact_count": len(self.facts),
         }
 
     @tool
-    def estimate_impact(self, sentiment: str, intent: str, intensity: str):
-        base = {"validation": 2, "feature_request": 3, "risk": 4}.get(intent, 2)
-        if intensity == "strong":
-            base += 1
-        if sentiment == "negative":
-            base += 1
-        score = min(base, 5)
+    def record_constraint(self, name: str, value: str):
+        constraint = {
+            "name": name,
+            "value": value,
+        }
+        self.constraints.append(constraint)
+        return constraint
+
+    @tool
+    def snapshot(self):
         return {
-            "score": score,
-            "priority": "high" if score >= 4 else "medium" if score == 3 else "low",
-            "reason": f"{intent} signal with {intensity} intensity and {sentiment} sentiment",
+            "facts": self.facts,
+            "constraints": self.constraints,
         }
 
 
-class ProductDecisionBoard(NoemaEnvironment):
-    """Keeps structured product decisions produced during the LLM run."""
+class HypothesisLab(NoemaEnvironment):
+    """Maintains competing explanations and tests them against observations."""
 
-    insights = Memory(default_factory=list)
-    opportunities = Memory(default_factory=list)
-    risks = Memory(default_factory=list)
-
-    @tool
-    def record_insight(self, title: str, evidence: str, sentiment: str, priority: str):
-        insight = {
-            "title": title,
-            "evidence": evidence,
-            "sentiment": sentiment,
-            "priority": priority,
-        }
-        self.insights.append(insight)
-        return insight
+    hypotheses = Memory(default_factory=dict)
+    tests = Memory(default_factory=list)
+    rejected = Memory(default_factory=list)
 
     @tool
-    def open_opportunity(self, title: str, hypothesis: str, expected_user_value: str):
-        opportunity = {
-            "title": title,
-            "hypothesis": hypothesis,
-            "expected_user_value": expected_user_value,
+    def propose_hypothesis(self, name: str, mechanism: str):
+        hypothesis = {
+            "mechanism": mechanism,
+            "score": 0,
             "status": "open",
         }
-        self.opportunities.append(opportunity)
-        return opportunity
-
-    @tool
-    def register_risk(self, title: str, mitigation: str, severity: str):
-        risk = {
-            "title": title,
-            "mitigation": mitigation,
-            "severity": severity,
-        }
-        self.risks.append(risk)
-        return risk
-
-    @tool
-    def board_snapshot(self):
+        self.hypotheses[name] = hypothesis
         return {
-            "insights": self.insights,
-            "opportunities": self.opportunities,
-            "risks": self.risks,
+            "name": name,
+            **hypothesis,
         }
-
-
-class ExperimentPlanner(NoemaEnvironment):
-    """Turns an opportunity into an executable product experiment."""
-
-    experiments = Memory(default_factory=list)
 
     @tool
-    def design_experiment(self, hypothesis: str, metric: str, rollout: str):
-        experiment = {
-            "hypothesis": hypothesis,
-            "metric": metric,
-            "rollout": rollout,
-            "decision_rule": f"Ship if {metric} improves without regressions during {rollout}.",
+    def test_hypothesis(self, name: str, evidence: str, verdict: str):
+        normalized = verdict.lower()
+        if "support" in normalized or "confirm" in normalized:
+            delta = 1
+            status = "supported"
+        elif "weaken" in normalized or "reject" in normalized or "contradict" in normalized:
+            delta = -1
+            status = "weakened"
+        else:
+            delta = 0
+            status = "neutral"
+
+        hypothesis = self.hypotheses.setdefault(
+            name,
+            {"mechanism": "created during testing", "score": 0, "status": "open"},
+        )
+        hypothesis["score"] += delta
+        hypothesis["status"] = status
+        test = {
+            "hypothesis": name,
+            "evidence": evidence,
+            "verdict": status,
+            "score": hypothesis["score"],
         }
-        self.experiments.append(experiment)
-        return experiment
+        self.tests.append(test)
+        return test
 
     @tool
-    def propose_validation_questions(self, audience: str, count: int):
-        questions = [
-            f"What made this experience valuable for {audience}?",
-            f"What would make the workflow more reliable for {audience}?",
-            f"Which missing control would {audience} expect next?",
-            f"What would prevent {audience} from adopting this feature?",
-        ]
-        return questions[:max(1, min(int(count), len(questions)))]
-
-
-class FollowUpRouter(NoemaEnvironment):
-    """Routes follow-up work to the right team based on the selected signal."""
-
-    routes = Memory(default_factory=list)
+    def reject_hypothesis(self, name: str, reason: str):
+        hypothesis = self.hypotheses.setdefault(
+            name,
+            {"mechanism": "created during rejection", "score": 0, "status": "open"},
+        )
+        hypothesis["status"] = "rejected"
+        rejection = {
+            "hypothesis": name,
+            "reason": reason,
+        }
+        self.rejected.append(rejection)
+        return rejection
 
     @tool
-    def route(self, signal_type: str, priority: str, rationale: str):
-        owners = {
-            "validation": "product",
-            "feature_request": "design+engineering",
-            "risk": "engineering",
+    def rank_hypotheses(self):
+        ranked = sorted(
+            (
+                {"name": name, **hypothesis}
+                for name, hypothesis in self.hypotheses.items()
+                if hypothesis["status"] != "rejected"
+            ),
+            key=lambda hypothesis: hypothesis["score"],
+            reverse=True,
+        )
+        return ranked
+
+
+class DiagnosticConsole(NoemaEnvironment):
+    """Runs small deterministic checks that the LLM can use as evidence."""
+
+    checks = Memory(default_factory=list)
+
+    @tool
+    def compare_metric(self, name: str, baseline: float, observed: float):
+        if baseline == 0:
+            ratio = None
+            change_percent = None
+        else:
+            ratio = observed / baseline
+            change_percent = ((observed - baseline) / baseline) * 100
+
+        result = {
+            "metric": name,
+            "baseline": baseline,
+            "observed": observed,
+            "ratio": ratio,
+            "change_percent": change_percent,
         }
-        route = {
-            "owner": owners.get(signal_type, "product"),
-            "priority": priority,
-            "rationale": rationale,
+        self.checks.append(result)
+        return result
+
+    @tool
+    def check_log_contains(self, log_line: str, expected: str):
+        found = expected.lower() in log_line.lower()
+        result = {
+            "log_line": log_line,
+            "expected": expected,
+            "found": found,
         }
-        self.routes.append(route)
-        return route
+        self.checks.append(result)
+        return result
 
 
-class ProductFeedbackWorkshop(NoemaEnvironment):
-    analyzer = Component(FeedbackAnalyzer, description="Find sentiment, intent, and impact.")
-    board = Component(ProductDecisionBoard, description="Persist product decisions from the run.")
-    planner = Component(ExperimentPlanner, description="Turn decisions into testable experiments.")
-    router = Component(FollowUpRouter, description="Assign concrete follow-up ownership.")
+class ResolutionBoard(NoemaEnvironment):
+    """Stores the final diagnosis and the operational follow-up."""
 
-    product = Visible("Noema declarative local-LLM programming interface")
-    objective = Visible("turn qualitative comments into product decisions")
+    conclusions = Memory(default_factory=list)
+    actions = Memory(default_factory=list)
+
+    @tool
+    def draw_conclusion(self, root_cause: str, confidence: str, supporting_evidence: str):
+        conclusion = {
+            "root_cause": root_cause,
+            "confidence": confidence,
+            "supporting_evidence": supporting_evidence,
+        }
+        self.conclusions.append(conclusion)
+        return conclusion
+
+    @tool
+    def plan_action(self, owner: str, action: str, urgency: str):
+        next_action = {
+            "owner": owner,
+            "action": action,
+            "urgency": urgency,
+        }
+        self.actions.append(next_action)
+        return next_action
+
+    @tool
+    def snapshot(self):
+        return {
+            "conclusions": self.conclusions,
+            "actions": self.actions,
+        }
+
+
+class IncidentInvestigator(NoemaEnvironment):
+    """Composes domain objects that help an LLM solve an operational incident."""
+
+    evidence = Component(EvidenceNotebook, description="Collect the facts that constrain the investigation.")
+    lab = Component(HypothesisLab, description="Create, test, rank, and reject explanations.")
+    console = Component(DiagnosticConsole, description="Run deterministic checks on metrics and logs.")
+    resolution = Component(ResolutionBoard, description="Record the final cause and the next action.")
+
+    incident = Visible("nightly invoice export failure")
+    goal = Visible("identify the most likely root cause and immediate correction")
 
     @visible
     @property
-    def open_decisions(self):
+    def progress(self):
         return {
-            "insights": len(self.board.insights),
-            "opportunities": len(self.board.opportunities),
-            "risks": len(self.board.risks),
-            "experiments": len(self.planner.experiments),
-            "routes": len(self.router.routes),
+            "facts": len(self.evidence.facts),
+            "hypotheses": len(self.lab.hypotheses),
+            "tests": len(self.lab.tests),
+            "rejections": len(self.lab.rejected),
+            "checks": len(self.console.checks),
+            "conclusions": len(self.resolution.conclusions),
+            "actions": len(self.resolution.actions),
         }
 
 
 def main():
-    workshop = ProductFeedbackWorkshop(llm=llm)
-    comment = (
-        "Noema's object composition feels powerful. "
-        "I want a clearer way to see which object acted and why."
-    )
+    investigator = IncidentInvestigator(llm=llm)
+    incident_notes = """
+    - Nightly invoice export failed for every tenant at 02:05.
+    - The scheduler started the export job normally.
+    - The processing queue grew from 120 to 7800 jobs in 30 minutes.
+    - The first failing downstream log says: payment-api 401 invalid_client.
+    - A service credential was rotated at 01:50.
+    - Manual retry succeeds after refreshing the payment-api token.
+    """
 
-    answer = workshop(
+    answer = investigator(
         f"""
-        Triage this product feedback for the Noema roadmap.
-        Use the available component tools to extract signals, estimate impact,
-        record a product insight, open an opportunity or risk if useful,
-        design one validation experiment, route the follow-up, then finish
-        with a concise product decision.
+        Investigate the incident from the notes below.
+        Use the component tools to record relevant facts, formulate competing
+        hypotheses, run deterministic checks, test the hypotheses, reject the
+        weaker explanation, draw a conclusion, and plan the immediate action.
+        Choose final only after the investigation has enough recorded evidence.
 
-        Feedback: {comment}
+        Incident notes:
+        {incident_notes}
         """,
-        max_steps=8,
-        max_tokens=120,
+        max_steps=16,
+        max_tokens=160,
     )
-    print(answer)
 
-    print(workshop.open_decisions)
-    print(workshop.board.board_snapshot())
-    print(workshop.planner.experiments)
-    print(workshop.router.routes)
+    print(answer)
+    print(investigator.progress)
+    print(investigator.evidence.snapshot())
+    print(investigator.lab.rank_hypotheses())
+    print(investigator.resolution.snapshot())
 
 
 if __name__ == "__main__":

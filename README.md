@@ -228,7 +228,7 @@ from Noema import *
 llm = LLM("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
 
 @Noema(llm)
-def comment_evaluation(comment):
+def diagnose_incident(report):
   pass
 ```
 #### 2. Add a system prompt using the python docstring
@@ -238,10 +238,10 @@ from Noema import *
 llm = LLM("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
 
 @Noema(llm)
-def comment_evaluation(comment):
+def diagnose_incident(report):
   """
-  You are a specialist of comment analysis.
-  You always produce a deep analysis of the comment.
+  You are a pragmatic incident diagnostician.
+  You compare observed facts, competing hypotheses, and corrective actions.
   """
 ```
 #### 3. Write python code
@@ -251,24 +251,30 @@ from Noema import *
 llm = LLM("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
 
 @Noema(llm)
-def comment_evaluation(comment):
+def diagnose_incident(report):
   """
-  You are a specialist of comment analysis.
-  You always produce a deep analysis of the comment.
+  You are a pragmatic incident diagnostician.
+  You compare observed facts, competing hypotheses, and corrective actions.
   """
-  comment_to_analyse = Information(f"{comment}")
-  specialists = ["Psychologist", "Product manager", "Satisfaction manager"]
-  analyse_by_specialists = {}
-  for specialist in specialists:
-    analysis = Sentence(f"Analysing the comment as a {specialist}")
-    analyse_by_specialists[specialist] = analysis.value
+  incident_report = Information(f"{report}")
+  facts = ListOf(Sentence, "Extract three factual observations from the report.")
+  primary_hypothesis = Sentence("State the most likely causal hypothesis.")
+  alternative_hypothesis = Sentence("State one plausible alternative hypothesis.")
+  decisive_evidence = Sentence(
+    f"Identify the evidence that separates {primary_hypothesis.value} "
+    f"from {alternative_hypothesis.value}."
+  )
   
-  synthesis = Paragraph("Providing a synthesis of the analysis.")
-  return synthesis.value, analyse_by_specialists
+  conclusion = Paragraph("Conclude with the likely cause and immediate action.")
+  return conclusion.value
 
-synthesis, abs = comment_evaluation("This llm is very good at following instructions!")
+conclusion = diagnose_incident("""
+Nightly invoice export failed for every tenant. The scheduler started normally,
+payment-api returned 401 invalid_client after credential rotation, and retry
+succeeds after refreshing the token.
+""")
 
-print(synthesis)
+print(conclusion)
 ```
 
 ### Declarative Automata
@@ -280,39 +286,37 @@ conditions:
 ```python
 from Noema import *
 
-graph = Automaton("comment-routing")
+graph = Automaton("incident-routing")
 
 @graph.state("classify")
 def classify():
-    sentiment = Select(
-        "Classify the sentiment.",
-        options=["positive", "neutral", "negative"],
+    severity = Select(
+        "Classify the incident severity.",
+        options=["low", "medium", "high"],
     )
-    intent = Select(
-        "Classify the intent.",
-        options=["praise", "bug_report", "feature_request", "complaint"],
+    domain = Select(
+        "Classify the most likely failing domain.",
+        options=["auth", "queue", "scheduler", "dependency"],
     )
-    return {"sentiment": sentiment, "intent": intent}
+    return {"severity": severity, "domain": domain}
 
-@graph.state("support")
-def support(context):
-    intent = context["classify"]["intent"].value
+@graph.state("mitigate")
+def mitigate(context):
+    domain = context["classify"]["domain"].value
     return Paragraph(
-        f"Draft a short support response for this intent: {intent}."
+        f"Draft an immediate mitigation for a {domain} incident."
     )
 
-@graph.state("positive")
-def positive():
-    return Sentence("Extract the main product insight.")
+@graph.state("investigate")
+def investigate():
+    return Sentence("Extract the next diagnostic question.")
 
 graph.transition(
     "classify",
-    "support",
-    when=lambda context: (
-        context["classify"]["sentiment"] == "negative"
-    ) & context["classify"]["intent"].in_(["bug_report", "complaint"]),
+    "mitigate",
+    when=lambda context: context["classify"]["severity"] == "high",
 )
-graph.transition("classify", "positive", default=True)
+graph.transition("classify", "investigate", default=True)
 
 result = graph.run("classify")
 print(result.path)
@@ -323,10 +327,10 @@ You can also record already executed Python/Noema blocks:
 
 ```python
 with graph.state("classify"):
-    sentiment = Select("Sentiment?", options=["positive", "negative"])
-    intent = Select("Intent?", options=["praise", "complaint"])
+    severity = Select("Severity?", options=["low", "high"])
+    domain = Select("Domain?", options=["auth", "queue"])
 
-graph.transition("classify", "support", when=intent == "complaint")
+graph.transition("classify", "mitigate", when=severity == "high")
 ```
 
 Parallel branches are explicit callables. By default they run sequentially,
@@ -335,8 +339,8 @@ branches use independent runtimes or thread-safe work.
 
 ```python
 with graph.parallel("expert-review") as review:
-    review.add("psychology", lambda: Sentence("Analyse the emotional signal."))
-    review.add("product", lambda: Sentence("Analyse the product signal."))
+    review.add("sre", lambda: Sentence("Assess runtime symptoms."))
+    review.add("security", lambda: Sentence("Assess credential or permission risk."))
 
 outputs = review.run()
 ```
@@ -351,31 +355,31 @@ available transition label, then moves to the transition target.
 ```python
 from Noema import *
 
-graph = SelectGraph("compact-comment-label", separator=" ")
+graph = SelectGraph("compact-incident-label", separator=" ")
 
 graph.transition(
     "start",
-    "sentiment",
-    ["positive", "neutral", "negative"],
+    "domain",
+    ["auth", "queue", "scheduler", "dependency"],
 )
 graph.transition(
-    "sentiment",
-    "intensity",
-    ["weak", "clear", "strong"],
+    "domain",
+    "impact",
+    ["single-tenant", "multi-tenant", "global"],
 )
 graph.transition(
-    "intensity",
-    "end",
-    ["satisfaction", "friction", "request"],
+    "impact",
+    "action",
+    ["refresh-token", "scale-workers", "rollback", "investigate"],
 )
 
 result = graph.run(
     "start",
-    objective="Build a compact label for the analysed comment.",
+    objective="Build a compact label for the incident report.",
 )
 
-print(result.text)    # for example: "positive strong satisfaction"
-print(result.path)    # ["start", "sentiment", "intensity", "end"]
+print(result.text)    # for example: "auth global refresh-token"
+print(result.path)    # ["start", "domain", "impact", "action"]
 ```
 
 Transitions can also be conditionally available:
@@ -384,7 +388,7 @@ Transitions can also be conditionally available:
 graph.transition(
     "start",
     "critical",
-    ["bug", "complaint"],
+    ["auth", "database"],
     when=lambda context: context["allow_critical"],
 )
 ```
@@ -402,101 +406,111 @@ from Noema import *
 llm = LLM("/models/gemma.gguf", reasoning="off")
 
 
-class FeedbackAnalyzer(NoemaEnvironment):
-    product_area = Visible("local LLM orchestration and developer experience")
+class EvidenceNotebook(NoemaEnvironment):
+    facts = Memory(default_factory=list)
 
     @tool
-    def extract_signals(self, comment: str):
-        return {
-            "sentiment": "positive",
-            "intent": "feature_request",
-            "intensity": "strong",
-            "evidence": comment,
+    def record_fact(self, source: str, observation: str):
+        fact = {"source": source, "observation": observation}
+        self.facts.append(fact)
+        return {"fact": fact, "fact_count": len(self.facts)}
+
+
+class HypothesisLab(NoemaEnvironment):
+    hypotheses = Memory(default_factory=dict)
+    tests = Memory(default_factory=list)
+
+    @tool
+    def propose_hypothesis(self, name: str, mechanism: str):
+        self.hypotheses[name] = {"mechanism": mechanism, "score": 0}
+        return {"name": name, **self.hypotheses[name]}
+
+    @tool
+    def test_hypothesis(self, name: str, evidence: str, verdict: str):
+        delta = 1 if "support" in verdict.lower() else -1
+        self.hypotheses[name]["score"] += delta
+        test = {"hypothesis": name, "evidence": evidence, "verdict": verdict}
+        self.tests.append(test)
+        return test
+
+
+class DiagnosticConsole(NoemaEnvironment):
+    @tool
+    def compare_metric(self, name: str, baseline: float, observed: float):
+        return {"metric": name, "ratio": observed / baseline}
+
+
+class ResolutionBoard(NoemaEnvironment):
+    conclusions = Memory(default_factory=list)
+    actions = Memory(default_factory=list)
+
+    @tool
+    def draw_conclusion(self, root_cause: str, confidence: str, next_action: str):
+        conclusion = {
+            "root_cause": root_cause,
+            "confidence": confidence,
+            "next_action": next_action,
         }
+        self.conclusions.append(conclusion)
+        return conclusion
 
     @tool
-    def estimate_impact(self, sentiment: str, intent: str, intensity: str):
-        return {"priority": "high", "reason": f"{intent} / {intensity} / {sentiment}"}
+    def plan_action(self, owner: str, action: str, urgency: str):
+        next_action = {"owner": owner, "action": action, "urgency": urgency}
+        self.actions.append(next_action)
+        return next_action
 
 
-class ProductDecisionBoard(NoemaEnvironment):
-    insights = Memory(default_factory=list)
-    opportunities = Memory(default_factory=list)
+class IncidentInvestigator(NoemaEnvironment):
+    evidence = Component(EvidenceNotebook)
+    lab = Component(HypothesisLab)
+    console = Component(DiagnosticConsole)
+    resolution = Component(ResolutionBoard)
 
-    @tool
-    def record_insight(self, title: str, evidence: str, sentiment: str, priority: str):
-        insight = {"title": title, "evidence": evidence, "sentiment": sentiment, "priority": priority}
-        self.insights.append(insight)
-        return insight
-
-    @tool
-    def open_opportunity(self, title: str, hypothesis: str, expected_user_value: str):
-        opportunity = {"title": title, "hypothesis": hypothesis, "expected_user_value": expected_user_value}
-        self.opportunities.append(opportunity)
-        return opportunity
+    incident = Visible("nightly invoice export failure")
 
 
-class ExperimentPlanner(NoemaEnvironment):
-    experiments = Memory(default_factory=list)
+investigator = IncidentInvestigator(llm=llm)
 
-    @tool
-    def design_experiment(self, hypothesis: str, metric: str, rollout: str):
-        experiment = {"hypothesis": hypothesis, "metric": metric, "rollout": rollout}
-        self.experiments.append(experiment)
-        return experiment
+answer = investigator("""
+Investigate this incident. Record facts, formulate competing hypotheses, run a
+deterministic check, test the hypotheses, draw a conclusion, plan the immediate
+action, and finish with a concise diagnosis.
 
-
-class ProductFeedbackWorkshop(NoemaEnvironment):
-    analyzer = Component(FeedbackAnalyzer, description="Find sentiment, intent, and impact.")
-    board = Component(ProductDecisionBoard, description="Persist product decisions from the run.")
-    planner = Component(ExperimentPlanner, description="Turn decisions into experiments.")
-
-    product = Visible("Noema declarative local-LLM programming interface")
-
-
-workshop = ProductFeedbackWorkshop(llm=llm)
-
-answer = workshop("""
-Triage this product feedback. Use the component tools to extract signals,
-estimate impact, record an insight, open an opportunity, design one validation
-experiment, then finish with a concise product decision.
-
-Feedback: Noema's object composition feels powerful. I want a clearer way to see
-which object acted and why.
-""", max_steps=8, max_tokens=120)
+Notes:
+- The scheduler started normally.
+- The queue grew from 120 to 7800 jobs.
+- Downstream logs show payment-api 401 invalid_client.
+- A service credential was rotated 15 minutes before the failure.
+- Manual retry succeeds after refreshing the payment-api token.
+""", max_steps=16, max_tokens=160)
 ```
 
 Only `Memory`, `Visible`, `Component`, `@visible`, and `@tool` are projected
 into the LLM environment. Regular Python attributes and methods stay private.
 Component tools are available with qualified names such as
-`analyzer.extract_signals`, `board.record_insight`, and
-`planner.design_experiment`.
+`evidence.record_fact`, `lab.propose_hypothesis`,
+`console.compare_metric`, and `resolution.draw_conclusion`.
 
 <details>
-  <summary>LLM output:</summary>
-[INST]
+  <summary>Execution trace:</summary>
 
-You are a specialist of comment analysis.
-You always produce a deep analysis of the comment.
-  
-
-#COMMENT_TO_ANALYSE : f'{comment}'
-
-#ANALYSIS : f'Analysing the comment as a {specialist}' (Response format: one sentence. Stop after the final punctuation)
-
-#SYNTHESIS : Providing a synthesis of the analysis. (Response format: one concise final sentence. Do not repeat phrases)
-
-[/INST]
-
-#COMMENT_TO_ANALYSE: This llm is very good!
-
-#ANALYSIS: The comment expresses a positive sentiment towards the LLM's capabilities, suggesting satisfaction with its performance and possibly indicating a belief in its psychological sophistication or understanding of human interaction nuances.
-
-#ANALYSIS: As a product manager, this feedback highlights the importance of user satisfaction and perceived intelligence in LLM evaluations, indicating a focus on enhancing user experience through advanced functionalities and addressing potential psychological aspects beyond mere functionality.
-
-#ANALYSIS: The comment reflects high user satisfaction with the LLM's performance, emphasizing its perceived intelligence and nuanced understanding, which are critical factors for product managers aiming to meet user expectations and foster trust through advanced technological capabilities.
-
-#SYNTHESIS: The comment underscores a significant positive reception of the LLM, highlighting its perceived intelligence and nuanced understanding beyond basic functionality. This feedback is crucial for product managers as it underscores the importance of aligning technological advancements with user expectations for psychological satisfaction and trust-building. Addressing these aspects could enhance user engagement and satisfaction, positioning the LLM as a valuable asset in meeting evolving technological and psychological needs within its applications. Future iterations should focus on maintaining and potentially elevating these perceived qualities to further solidify its role as a sophisticated tool in diverse user contexts.
+```text
+NOEMA_ENV_ACTION_0 = tool:evidence.record_fact
+NOEMA_ENV_OBSERVATION_0 = {"fact_count": 1}
+NOEMA_ENV_ACTION_1 = tool:lab.propose_hypothesis
+NOEMA_ENV_OBSERVATION_1 = {"name": "expired payment credential", "score": 0}
+NOEMA_ENV_ACTION_2 = tool:console.compare_metric
+NOEMA_ENV_OBSERVATION_2 = {"metric": "queue backlog", "ratio": 65.0}
+NOEMA_ENV_ACTION_3 = tool:lab.test_hypothesis
+NOEMA_ENV_OBSERVATION_3 = {"hypothesis": "expired payment credential", "verdict": "supported"}
+NOEMA_ENV_ACTION_4 = tool:resolution.draw_conclusion
+NOEMA_ENV_OBSERVATION_4 = {"root_cause": "payment-api token not refreshed after credential rotation"}
+NOEMA_ENV_ACTION_5 = tool:resolution.plan_action
+NOEMA_ENV_OBSERVATION_5 = {"owner": "platform", "urgency": "high"}
+NOEMA_ENV_ACTION_6 = final
+NOEMA_ENV_FINAL_6 = The likely cause is a stale payment-api credential after rotation; refresh the token and add a post-rotation validation check.
+```
 </details>
 
 ## Generators
@@ -667,49 +681,51 @@ from Noema import *
 llm = LLM("../Models/granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", verbose=True, write_graph=True)
 
 @Noema(llm)
-def analysis_evaluation(analysis):
+def hypothesis_score(hypothesis):
     """
-    You are a specialist of analysis evaluation.
-    You produce a numerical evaluation of the analysis, 0 is bad, 10 is good.
-    Good means that the analysis is relevant and useful.
-    Bad means that the analysis is not relevant and not useful.
+    You evaluate how well an incident hypothesis is supported by the available
+    evidence. 0 means unsupported, 10 means strongly supported.
     """
-    analysis_to_evaluate = Information(f"{analysis}")
-    evaluation = Float("Evaluation of the analysis, between 0 and 10")
-    return evaluation.value
+    hypothesis_to_evaluate = Information(f"{hypothesis}")
+    score = Float("Score the hypothesis support, between 0 and 10.")
+    return score.value
 
 @Noema(llm)
-def comment_note_evaluation(analysis):
+def hypothesis_risk_note(score):
     """
-    You are a specialist of evaluation commenting.
-    You always produce a deep analysis of the comment.
+    You explain what a hypothesis score implies for operational risk.
     """
-    analysis_to_evaluate = Information(f"{analysis}")
-    comment = Sentence("Commenting the analysis")
-    return comment.value
+    score_to_explain = Information(f"{score}")
+    note = Sentence("Explain the operational risk implied by this score.")
+    return note.value
 
 @Noema(llm)
-def comment_evaluation(comment):
+def incident_diagnosis(report):
   """
-  You are a specialist of comment analysis.
-  You always produce a deep analysis of the comment.
+  You are an incident lead.
+  You compare expert hypotheses and converge toward a root-cause conclusion.
   """
-  comment_to_analyse = Information(f"{comment}")
-  specialists = ["Psychologist", "Sociologist", "Linguist", "Philosopher"]
-  analyse_by_specialists = {}
+  incident_report = Information(f"{report}")
+  specialists = ["SRE", "Security engineer", "Backend engineer"]
+  hypotheses = {}
+
   for specialist in specialists:
-    analysis = Sentence(f"Analysing the comment as a {specialist}")
-    analyse_by_specialists[specialist] = analysis.value
-    evaluation = analysis_evaluation(analysis.value)
-    comment_note_evaluation_res = comment_note_evaluation(evaluation)
-    improvements = ListOf(Sentence, "List 4 improvements")
+    hypothesis = Sentence(f"Formulate a causal hypothesis as a {specialist}.")
+    hypotheses[specialist] = hypothesis.value
+    score = hypothesis_score(hypothesis.value)
+    risk_note = hypothesis_risk_note(score)
+    checks = ListOf(Sentence, "List three concrete checks for this hypothesis.")
   
-  synthesis = Paragraph("Providing a synthesis of the analysis.")
-  sub = Substring(f"Extracting synthesis comment from {synthesis.value}")
-  print(sub.value)
+  synthesis = Paragraph("Synthesize the strongest hypothesis and the decisive evidence.")
+  root_cause = Substring(f"Extract the root cause from this synthesis: {synthesis.value}")
+  print(root_cause.value)
   return synthesis.value
 
-synthesis = comment_evaluation("This llm is very good!")
+synthesis = incident_diagnosis("""
+Nightly invoice export failed for every tenant. The scheduler started normally,
+payment-api returned 401 invalid_client after credential rotation, and retry
+succeeds after refreshing the token.
+""")
 print(synthesis)
 ```
 <p align="center">

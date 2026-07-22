@@ -22,27 +22,30 @@ llm = LLM(
 
 
 @Noema(llm)
-def compact_label(comment):
+def compact_incident_label(report):
     """
-    You create compact, stable labels for user comments.
+    You create compact, stable labels for operational incidents.
     """
-    Information(f"Comment: {comment}")
+    Information(f"Incident report: {report}")
 
-    graph = SelectGraph("compact-comment-label", separator=" ")
-    graph.transition("start", "sentiment", ["positive", "neutral", "negative"])
-    graph.transition("sentiment", "intensity", ["weak", "clear", "strong"])
-    graph.transition("intensity", "end", ["satisfaction", "friction", "request"])
+    graph = SelectGraph("compact-incident-label", separator=" ")
+    graph.transition("start", "domain", ["auth", "queue", "scheduler", "dependency"])
+    graph.transition("domain", "impact", ["single-tenant", "multi-tenant", "global"])
+    graph.transition("impact", "action", ["refresh-token", "scale-workers", "rollback", "investigate"])
 
     result = graph.run(
         "start",
-        objective="Choose the best compact label for the current comment.",
+        objective="Choose the best compact incident label for the current report.",
     )
     print(graph.to_mermaid())
     return result.text
 
 
 def main():
-    label = compact_label("This llm is very good!")
+    label = compact_incident_label(
+        "Invoice export failed for all tenants after a credential rotation; "
+        "payment-api returns 401 invalid_client."
+    )
     print(label)
 
 
