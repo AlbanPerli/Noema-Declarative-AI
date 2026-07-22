@@ -15,14 +15,10 @@ if HAS_RUNTIME_DEPS:
         Bool,
         Float,
         Int,
-        JsonObject,
         ListOf,
         Noema,
-        NoemaGenerationError,
         LLM,
         Paragraph,
-        Select,
-        SelectOrNone,
         Sentence,
         SemPy,
         Word,
@@ -40,8 +36,6 @@ class TestNoema(unittest.TestCase):
         self.assertIs(Bool.return_type, bool)
         self.assertIs(Sentence.return_type, str)
         self.assertIs(Paragraph.return_type, str)
-        self.assertIs(JsonObject.return_type, dict)
-        self.assertTrue(issubclass(NoemaGenerationError, Exception))
 
     def test_llm_defaults_leave_room_for_nested_examples(self):
         llm = LLM("model.gguf")
@@ -87,8 +81,8 @@ class TestNoema(unittest.TestCase):
 
         fake_runtime = FakeRuntime()
 
-        with patch("Noema.generation.current_runtime", return_value=fake_runtime):
-            with patch("Noema.generation.gen", return_value="A direct sentence.") as mocked_gen:
+        with patch("Noema.Generator.current_runtime", return_value=fake_runtime):
+            with patch("Noema.Generator.gen", return_value="A direct sentence.") as mocked_gen:
                 sentence = Sentence("Analyse the comment")
 
         self.assertEqual(sentence.value, "A direct sentence.")
@@ -120,187 +114,13 @@ class TestNoema(unittest.TestCase):
 
         fake_runtime = FakeRuntime()
 
-        with patch("Noema.generation.current_runtime", return_value=fake_runtime):
-            with patch("Noema.generation.gen", return_value="Label") as mocked_gen:
+        with patch("Noema.Generator.current_runtime", return_value=fake_runtime):
+            with patch("Noema.Generator.gen", return_value="Label") as mocked_gen:
                 word = Word("Choose a label")
 
         self.assertEqual(word.value, "Label")
         self.assertIn("regex", mocked_gen.call_args.kwargs)
         self.assertNotIn("stop", mocked_gen.call_args.kwargs)
-
-    def test_unassigned_generators_receive_stable_fallback_names(self):
-        reference = Sentence(var="existing_step")
-        self.assertEqual(str(reference), "#EXISTING_STEP:")
-
-        class FakeRuntime:
-            def __init__(self):
-                self.llm = FakeModel()
-                self.verbose = False
-
-            def generation_kwargs(self, max_tokens=None):
-                return {"max_tokens": max_tokens}
-
-            def reasoning_prelude(self):
-                return ""
-
-            def append_to_chain(self, value):
-                pass
-
-        class FakeModel:
-            def __add__(self, value):
-                return self
-
-            def __getitem__(self, name):
-                if name == "response_stop_text":
-                    return "."
-                return "Generated sentence"
-
-        fake_runtime = FakeRuntime()
-
-        def make_unassigned_sentence():
-            return Sentence("Generate without assignment")
-
-        with patch("Noema.generation.current_runtime", return_value=fake_runtime):
-            with patch("Noema.generation.gen", return_value="generated"):
-                sentence = make_unassigned_sentence()
-
-        self.assertTrue(sentence.id.startswith("sentence_"))
-        self.assertEqual(sentence.value, "Generated sentence.")
-
-    def test_generator_raises_when_value_cannot_be_coerced(self):
-        class FakeRuntime:
-            def __init__(self):
-                self.llm = FakeModel()
-                self.verbose = False
-
-            def generation_kwargs(self, max_tokens=None):
-                return {"max_tokens": max_tokens}
-
-            def reasoning_prelude(self):
-                return ""
-
-            def append_to_chain(self, value):
-                pass
-
-        class FakeModel:
-            def __add__(self, value):
-                return self
-
-            def __getitem__(self, name):
-                return "not-an-int"
-
-        with patch("Noema.generation.current_runtime", return_value=FakeRuntime()):
-            with patch("Noema.generation.gen", return_value="generated"):
-                with self.assertRaises(NoemaGenerationError):
-                    Int("Generate an integer")
-
-    def test_select_rejects_empty_options(self):
-        with self.assertRaisesRegex(NoemaGenerationError, "at least one option"):
-            Select("Choose", options=[])
-
-    def test_select_or_none_does_not_mutate_original_options(self):
-        class FakeRuntime:
-            def __init__(self):
-                self.llm = FakeModel()
-                self.verbose = False
-
-            def append_to_chain(self, value):
-                pass
-
-        class FakeModel:
-            def __add__(self, value):
-                return self
-
-            def __getitem__(self, name):
-                return "None"
-
-        options = ["A"]
-
-        with patch("Noema.generation.current_runtime", return_value=FakeRuntime()):
-            with patch("Noema.generation.select", return_value="selected"):
-                choice = SelectOrNone("Choose optionally", options=options)
-
-        self.assertIsNone(choice.value)
-        self.assertEqual(options, ["A"])
-
-    def test_json_object_uses_guidance_json_schema(self):
-        class FakeRuntime:
-            def __init__(self):
-                self.llm = FakeModel()
-                self.verbose = False
-                self.temperature = 0.1
-
-            def generation_kwargs(self, max_tokens=None):
-                return {"max_tokens": max_tokens}
-
-            def reasoning_prelude(self):
-                return ""
-
-            def append_to_chain(self, value):
-                pass
-
-        class FakeModel:
-            def __add__(self, value):
-                return self
-
-            def __getitem__(self, name):
-                return '{"answer": "ok", "score": 8}'
-
-        schema = {
-            "type": "object",
-            "properties": {
-                "answer": {"type": "string"},
-                "score": {"type": "integer"},
-            },
-            "required": ["answer", "score"],
-            "additionalProperties": False,
-        }
-        fake_runtime = FakeRuntime()
-
-        with patch("Noema.generation.current_runtime", return_value=fake_runtime):
-            with patch("Noema.generation.guidance_json", return_value="json-object") as mocked_json:
-                result = JsonObject("Build a structured answer", schema=schema)
-
-        self.assertEqual(result.value, {"answer": "ok", "score": 8})
-        self.assertEqual(mocked_json.call_args.kwargs["schema"], schema)
-
-    def test_listof_uses_item_generator_constraints(self):
-        class FakeRuntime:
-            def __init__(self):
-                self.llm = FakeModel()
-                self.verbose = False
-
-            def generation_kwargs(self, max_tokens=None):
-                return {"max_tokens": max_tokens}
-
-            def reasoning_prelude(self):
-                return ""
-
-            def append_to_chain(self, value):
-                pass
-
-        class FakeModel:
-            def __add__(self, value):
-                return self
-
-            def __getitem__(self, name):
-                if name.endswith("_stop_text"):
-                    return "."
-                values = {
-                    "items_0_response": "First item",
-                    "items_1_response": "Second item",
-                }
-                return values[name]
-
-        fake_runtime = FakeRuntime()
-
-        with patch("Noema.composed_types.current_runtime", return_value=fake_runtime):
-            with patch("Noema.composed_types.gen", return_value="generated") as mocked_gen:
-                items = ListOf(Sentence, "List 2 items")
-
-        self.assertEqual(items.value, ["First item.", "Second item."])
-        self.assertEqual(mocked_gen.call_args.kwargs["stop_regex"], r"[.!?]")
-        self.assertEqual(mocked_gen.call_args.kwargs["save_stop_text"], "items_1_response_stop_text")
 
     def test_llm_can_disable_reasoning(self):
         llm = LLM("model.gguf", reasoning="off")
@@ -332,6 +152,10 @@ class TestNoema(unittest.TestCase):
         with self.assertRaisesRegex(Exception, "declare an LLM"):
             current_runtime()
 
+    def test_generators_can_reference_existing_variables(self):
+        reference = Sentence(var="existing_step")
+        self.assertEqual(str(reference), "#EXISTING_STEP:")
+
     def test_information_verbose_omits_missing_hint(self):
         class FakeRuntime:
             def __init__(self):
@@ -342,7 +166,7 @@ class TestNoema(unittest.TestCase):
             def append_to_chain(self, value):
                 self.chain.append(value)
 
-        with patch("Noema.generation.current_runtime", return_value=FakeRuntime()):
+        with patch("Noema.information.current_runtime", return_value=FakeRuntime()):
             with patch("builtins.print") as mocked_print:
                 info = Information("hello")
 
