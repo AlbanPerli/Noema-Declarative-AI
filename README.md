@@ -389,6 +389,51 @@ graph.transition(
 )
 ```
 
+### LLM Execution Environments
+
+`NoemaEnvironment` lets a Python object become the execution environment of an
+LLM. The model sees declared memory, visible properties, and callable tools. On
+each step it chooses either a final answer or one exposed method to call; Noema
+executes the Python method and returns the observation to the model.
+
+```python
+from Noema import *
+
+llm = LLM("/models/gemma.gguf", reasoning="off")
+
+
+class CommentWorkspace(NoemaEnvironment):
+    comments = Memory(default_factory=list)
+    labels = Memory(default_factory=dict)
+    tone = Visible("concise and factual")
+
+    @visible
+    @property
+    def comment_count(self):
+        return len(self.comments)
+
+    @tool
+    def add_comment(self, comment: str):
+        self.comments.append(comment)
+        return {"count": len(self.comments)}
+
+    @tool
+    def label_comment(self, comment: str, label: str):
+        self.labels[comment] = label
+        return self.labels
+
+
+workspace = CommentWorkspace(llm=llm)
+
+answer = workspace("""
+Store this comment, classify it, and answer with a short synthesis:
+This llm is very good!
+""")
+```
+
+Only `Memory`, `Visible`, `@visible`, and `@tool` are projected into the LLM
+environment. Regular Python attributes and methods stay private.
+
 <details>
   <summary>LLM output:</summary>
 [INST]

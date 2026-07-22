@@ -20,6 +20,14 @@ if HAS_RUNTIME_DEPS:
         LLM,
         Automaton,
         SelectGraph,
+        NoemaEnvironment,
+        Memory,
+        Visible,
+        tool,
+        visible,
+        EnvironmentDecision,
+        EnvironmentRun,
+        EnvironmentObservation,
         Paragraph,
         Sentence,
         SemPy,
@@ -41,6 +49,14 @@ class TestNoema(unittest.TestCase):
     def test_public_api_imports(self):
         self.assertIsNotNone(Automaton)
         self.assertIsNotNone(SelectGraph)
+        self.assertIsNotNone(NoemaEnvironment)
+        self.assertIsNotNone(Memory)
+        self.assertIsNotNone(Visible)
+        self.assertIsNotNone(tool)
+        self.assertIsNotNone(visible)
+        self.assertIsNotNone(EnvironmentDecision)
+        self.assertIsNotNone(EnvironmentRun)
+        self.assertIsNotNone(EnvironmentObservation)
         self.assertIs(Word.return_type, str)
         self.assertIs(Int.return_type, int)
         self.assertIs(Float.return_type, float)
@@ -310,6 +326,96 @@ class TestNoema(unittest.TestCase):
 
         self.assertIn("flowchart TD", mermaid)
         self.assertIn("-->|positive, negative|", mermaid)
+
+    def test_environment_memory_is_isolated_per_instance(self):
+        class Notebook(NoemaEnvironment):
+            notes = Memory(default=[])
+
+        first = Notebook()
+        second = Notebook()
+
+        first.notes.append("alpha")
+
+        self.assertEqual(first.notes, ["alpha"])
+        self.assertEqual(second.notes, [])
+
+    def test_environment_manifest_exposes_visible_state_and_tools(self):
+        class CommentWorkspace(NoemaEnvironment):
+            comments = Memory(default_factory=list, description="Known comments")
+            tone = Visible("concise")
+            internal = Memory(default="hidden", visible=False)
+
+            @visible
+            @property
+            def comment_count(self):
+                return len(self.comments)
+
+            @tool(description="Store one comment")
+            def add_comment(self, comment: str):
+                self.comments.append(comment)
+                return len(self.comments)
+
+        workspace = CommentWorkspace()
+        manifest = workspace.manifest()
+
+        self.assertEqual(manifest["state"]["comments"], [])
+        self.assertEqual(manifest["state"]["tone"], "concise")
+        self.assertEqual(manifest["state"]["comment_count"], 0)
+        self.assertNotIn("internal", manifest["state"])
+        self.assertEqual(manifest["tools"][0]["name"], "add_comment")
+        self.assertEqual(manifest["tools"][0]["signature"], "add_comment(comment: str)")
+
+    def test_environment_call_runs_tool_loop_until_final_answer(self):
+        class CommentWorkspace(NoemaEnvironment):
+            comments = Memory(default_factory=list)
+
+            @visible
+            @property
+            def comment_count(self):
+                return len(self.comments)
+
+            @tool
+            def add_comment(self, comment: str):
+                self.comments.append(comment)
+                return {"count": len(self.comments)}
+
+        workspace = CommentWorkspace()
+        decisions = iter([
+            {"tool": "add_comment", "args": {"comment": "This llm is very good!"}},
+            {"answer": "Stored and classified as positive."},
+        ])
+
+        answer = workspace(
+            "Store this comment and answer.",
+            planner=lambda environment, prompt, run: next(decisions),
+        )
+
+        self.assertEqual(answer, "Stored and classified as positive.")
+        self.assertEqual(workspace.comments, ["This llm is very good!"])
+        self.assertEqual(workspace.last_run.observations[0].tool, "add_comment")
+        self.assertEqual(workspace.last_run.observations[0].result, {"count": 1})
+
+    def test_environment_rejects_unknown_tools(self):
+        class EmptyWorkspace(NoemaEnvironment):
+            pass
+
+        workspace = EmptyWorkspace()
+
+        with self.assertRaisesRegex(ValueError, "Unknown Noema environment tool"):
+            workspace("Call something.", planner=lambda environment, prompt, run: {"tool": "missing"})
+
+    def test_environment_rejects_duplicate_tool_names(self):
+        class DuplicateWorkspace(NoemaEnvironment):
+            @tool(name="same")
+            def first(self):
+                return "first"
+
+            @tool(name="same")
+            def second(self):
+                return "second"
+
+        with self.assertRaisesRegex(ValueError, "Duplicate Noema environment tool name"):
+            DuplicateWorkspace().tool_specs()
 
     def test_llm_can_disable_reasoning(self):
         llm = LLM("model.gguf", reasoning="off")
