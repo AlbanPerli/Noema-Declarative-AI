@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import copy
 import inspect
 import json
@@ -40,6 +41,7 @@ class ToolSpec:
     parameters: tuple[str, ...]
     component_name: str | None = None
     local_name: str | None = None
+    parameter_annotations: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_component_tool(self):
@@ -58,6 +60,7 @@ class EnvironmentDecision:
     tool: str | None = None
     args: dict[str, Any] = field(default_factory=dict)
     answer: str | None = None
+    observation: EnvironmentObservation | None = None
 
     @classmethod
     def call(cls, tool_name: str, args: dict[str, Any] | None = None):
@@ -67,9 +70,13 @@ class EnvironmentDecision:
     def final(cls, answer: Any):
         return cls(answer=str(value_of(answer)))
 
+    @classmethod
+    def observed(cls, observation: EnvironmentObservation):
+        return cls(tool=observation.tool, args=dict(observation.args), observation=observation)
+
     @property
     def is_final(self):
-        return self.tool is None
+        return self.tool is None and self.observation is None
 
 
 @dataclass
@@ -255,7 +262,10 @@ class NoemaEnvironment:
                 self._log_final(step_index, run.answer)
                 return run if return_run else run.answer
 
-            observation = self.invoke(decision.tool, **decision.args)
+            if decision.observation is not None:
+                observation = decision.observation
+            else:
+                observation = self.invoke(decision.tool, **decision.args)
             run.observations.append(observation)
             self._log_observation(step_index, observation)
 
@@ -331,6 +341,10 @@ class NoemaEnvironment:
                 signature=f"{tool_name}{signature}",
                 description=metadata.description or inspect.getdoc(bound_method) or "",
                 parameters=tuple(signature.parameters),
+                parameter_annotations={
+                    name: parameter.annotation
+                    for name, parameter in signature.parameters.items()
+                },
             )
         return specs
 
@@ -349,6 +363,7 @@ class NoemaEnvironment:
                     parameters=child_spec.parameters,
                     component_name=component_name,
                     local_name=local_name,
+                    parameter_annotations=child_spec.parameter_annotations,
                 )
         return specs
 
@@ -474,7 +489,19 @@ class NoemaEnvironment:
                 regex=r"\{[^\n]*\}",
                 **runtime.generation_kwargs(self.argument_tokens),
             ) + "\n"
-            args = _parse_json_object(llm[args_name])
+            raw_args = llm[args_name]
+            try:
+                args = _parse_json_object(raw_args)
+            except ValueError as error:
+                runtime.llm = llm
+                return EnvironmentDecision.observed(
+                    EnvironmentObservation(
+                        tool=tool_name,
+                        args={"_raw": str(raw_args)},
+                        result=_tool_argument_json_error(spec, raw_args, error),
+                    )
+                )
+            args = _normalize_tool_arguments(spec, args)
             self._log_arguments(step_index, spec, args)
 
         runtime.llm = llm
@@ -543,6 +570,9 @@ class NoemaEnvironment:
             Required JSON object keys: {', '.join(spec.parameters)}.
             JSON shape: {_argument_json_shape(spec)}.
             Include every required key exactly once.
+            Use double quotes for every key and string value.
+            Do not use Python dict syntax, single quotes, comments, ellipses,
+            placeholders, or trailing commas.
             Return a compact one-line JSON object only.
             """
         ).strip()
@@ -697,6 +727,32 @@ def _format_tool_call(tool_name, args):
     return f"{tool_name}({arguments})"
 
 
+def _normalize_tool_arguments(spec, args):
+    dict_parameter = _single_dict_parameter(spec)
+    if dict_parameter is not None and dict_parameter not in args:
+        return {dict_parameter: args}
+    return args
+
+
+def _single_dict_parameter(spec):
+    if len(spec.parameters) != 1:
+        return None
+    parameter = spec.parameters[0]
+    annotation = spec.parameter_annotations.get(parameter)
+    if _is_dict_annotation(annotation):
+        return parameter
+    return None
+
+
+def _is_dict_annotation(annotation):
+    if annotation is dict:
+        return True
+    if annotation is inspect.Signature.empty:
+        return False
+    text = str(annotation).strip().lower()
+    return text == "dict" or text.startswith("dict[") or text.startswith("typing.dict")
+
+
 def _argument_json_shape(spec):
     return json.dumps({name: f"<{name}>" for name in spec.parameters}, ensure_ascii=True)
 
@@ -713,6 +769,21 @@ def _tool_argument_error(spec, args, error):
     }
 
 
+def _tool_argument_json_error(spec, raw_args, error):
+    return {
+        "error": {
+            "type": "invalid_tool_arguments",
+            "message": str(error),
+            "expected": spec.signature,
+            "received": str(raw_args),
+            "hint": (
+                "Call the same tool again with a valid one-line JSON object. "
+                "Use double quotes and include every required key."
+            ),
+        }
+    }
+
+
 def _json_log(value):
     return json.dumps(_json_safe(value), ensure_ascii=True)
 
@@ -721,10 +792,28 @@ def _parse_json_object(value):
     try:
         parsed = json.loads(value)
     except json.JSONDecodeError as error:
-        raise ValueError(f"NoemaEnvironment expected JSON object arguments, got: {value!r}") from error
+        try:
+            parsed = ast.literal_eval(value)
+        except (SyntaxError, ValueError, TypeError):
+            raise ValueError(f"NoemaEnvironment expected JSON object arguments, got: {value!r}") from error
+        if not isinstance(parsed, dict):
+            raise ValueError(f"NoemaEnvironment expected JSON object arguments, got: {value!r}") from error
+        return _literal_json_safe(parsed)
     if not isinstance(parsed, dict):
         raise ValueError(f"NoemaEnvironment expected JSON object arguments, got: {value!r}")
     return parsed
+
+
+def _literal_json_safe(value):
+    if value is Ellipsis:
+        return "..."
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, dict):
+        return {str(key): _literal_json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_literal_json_safe(item) for item in value]
+    return str(value)
 
 
 def _clean_final_answer(value):
