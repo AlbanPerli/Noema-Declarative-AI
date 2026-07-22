@@ -61,7 +61,7 @@ class Subject(metaclass=SingletonMeta):
             suppress_startup_logs = _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", "0")
 
         self.verbose = verbose
-        self.model_path = model_path
+        self.model_path = str(model_path)
         self.write_graph = write_graph
         with _suppress_native_startup_logs(suppress_startup_logs):
             self.llm = models.LlamaCpp(
@@ -74,6 +74,18 @@ class Subject(metaclass=SingletonMeta):
             )
         self.structure = []
         self.stack = [self.structure]
+
+    @classmethod
+    def configure_shared(cls, model_path, **kwargs):
+        instance = SingletonMeta._instances.get(cls)
+        if instance is not None and instance.model_path == str(model_path) and instance.llm is not None:
+            return instance
+
+        if instance is not None:
+            instance.close()
+            SingletonMeta._instances.pop(cls, None)
+
+        return cls(str(model_path), **kwargs)
 
     def enter_function(self, f_name, inst, noesis):
         func = {
@@ -300,3 +312,4 @@ class Subject(metaclass=SingletonMeta):
         instance = SingletonMeta._instances.get(cls)
         if instance is not None:
             instance.close()
+            SingletonMeta._instances.pop(cls, None)

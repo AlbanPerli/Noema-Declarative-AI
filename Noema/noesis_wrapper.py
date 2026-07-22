@@ -1,6 +1,7 @@
 import inspect
 from functools import wraps
 import ast
+import os
 import re
 import textwrap
 from .Subject import *
@@ -94,9 +95,13 @@ class NoesisBuilder:
 
         return noesis+ "\n[/INST]\n\n"
 
-def Noema(func):
+def _decorate_noema(func, model_path=None, subject_kwargs=None):
+    subject_kwargs = subject_kwargs or {}
+
     @wraps(func)
     def wrapper(*args, **kwargs):
+        if model_path is not None:
+            Subject.configure_shared(model_path, **subject_kwargs)
         
         def find_subclasses(base_class, namespace):
             subclasses = []
@@ -127,18 +132,36 @@ def Noema(func):
         finder = ClassInstanceFinder(classes_to_find)
         finder.visit(tree)
         noesis = NoesisBuilder(doc, finder.instances).build()
-        Subject().shared().llm += "\n"+noesis
-        Subject().shared().enter_function(func_name, doc, noesis)
+        subject = Subject.shared()
+        subject.llm += "\n"+noesis
+        subject.enter_function(func_name, doc, noesis)
         result = None  # Initialisation de 'result'
         try:
             result = func(*args, **kwargs)
         except Exception as e:
-            Subject().shared().exit_function(result)
+            subject.exit_function(result)
             raise e  # Relancer l'exception après le nettoyage
         else:
-            Subject().shared().exit_function(result)
+            subject.exit_function(result)
         return result
     
     return wrapper
 
+
+def Noema(func=None, **subject_kwargs):
+    model_path = subject_kwargs.pop("model_path", None)
+
+    if callable(func) and model_path is None:
+        return _decorate_noema(func)
+
+    if func is None or isinstance(func, (str, os.PathLike)):
+        if func is not None:
+            model_path = func
+
+        def decorator(decorated_func):
+            return _decorate_noema(decorated_func, model_path, subject_kwargs)
+
+        return decorator
+
+    raise TypeError("Noema expects a function or a model path.")
     

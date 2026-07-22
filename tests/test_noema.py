@@ -1,6 +1,7 @@
 
 import unittest
 import importlib.util
+from unittest.mock import patch
 
 try:
     import guidance  # noqa: F401
@@ -57,6 +58,39 @@ class TestNoema(unittest.TestCase):
         wrapped = Noema(missing_docstring)
         with self.assertRaisesRegex(ValueError, "docstring"):
             wrapped()
+
+    def test_decorator_can_declare_llm_path(self):
+        class FakeSubject:
+            def __init__(self):
+                self.llm = ""
+                self.entered = []
+                self.exited = []
+
+            def enter_function(self, *args):
+                self.entered.append(args)
+
+            def exit_function(self, value):
+                self.exited.append(value)
+
+        fake_subject = FakeSubject()
+
+        with patch("Noema.noesis_wrapper.Subject") as subject_cls:
+            subject_cls.configure_shared.return_value = fake_subject
+            subject_cls.shared.return_value = fake_subject
+
+            @Noema("model-a.gguf", context_size=2048)
+            def declared_model_task():
+                """Do the task with the declared model."""
+                return "ok"
+
+            self.assertEqual(declared_model_task(), "ok")
+            subject_cls.configure_shared.assert_called_once_with(
+                "model-a.gguf",
+                context_size=2048,
+            )
+            subject_cls.shared.assert_called_once_with()
+            self.assertEqual(len(fake_subject.entered), 1)
+            self.assertEqual(fake_subject.exited, ["ok"])
 
     def test_semantic_python_letter_count_fallback(self):
         sempy = SemPy("Count the occurrence of letters in a word")
