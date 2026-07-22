@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import inspect
 import json
+import re
 import textwrap
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -158,8 +159,16 @@ class NoemaEnvironment:
         "\nFinal response generation",
         "\nFinal Response Mode",
         "\nFinal response mode",
+        "\nFinal Answer Generation",
+        "\nFinal answer generation",
+        "\nOutputting Final Answer",
+        "\nOutputting final answer",
         "\nPlan:",
         "\nplan:",
+        "\nWait",
+        "\nwait",
+        "\nThe execution sequence",
+        "\nthe execution sequence",
         "\nThe chosen output format",
         "\n#NOEMA_ENV",
     )
@@ -559,12 +568,20 @@ def _clean_final_answer(value):
     text = _remove_think_sections(text).strip()
     text = _strip_answer_label(text)
     text = _drop_meta_preamble(text)
+    text = _drop_meta_tail(text)
+    text = _strip_trailing_meta_parenthetical(text)
 
     cut_markers = (
         "\n***",
         "\n*self-correction",
         "\nself-correction",
         "\nfinal response generation",
+        "\nfinal response mode",
+        "\nfinal answer generation",
+        "\noutputting final answer",
+        "\nplan:",
+        "\nwait",
+        "\nthe execution sequence",
         "\nthe chosen output format",
         "\n#noema_env",
     )
@@ -574,6 +591,25 @@ def _clean_final_answer(value):
         text = text[:min(cut_indexes)]
 
     return text.strip()
+
+
+def _drop_meta_tail(text):
+    lines = text.splitlines()
+    kept = []
+    for line in lines:
+        if _is_meta_preamble(line):
+            break
+        kept.append(line)
+    return "\n".join(kept).strip()
+
+
+def _strip_trailing_meta_parenthetical(text):
+    return re.sub(
+        r"\s+\((?:synthesis|summary|response|answer|classification|based on)[^)]*\)\s*$",
+        "",
+        text.strip(),
+        flags=re.IGNORECASE,
+    )
 
 
 def _drop_meta_preamble(text):
@@ -598,12 +634,18 @@ def _is_meta_preamble(text):
     prefixes = (
         "final response mode",
         "final response generation",
+        "final answer generation",
+        "outputting final answer",
         "synthesis of actions taken",
         "self-correction",
         "refinement",
         "reasoning",
         "analysis",
         "plan:",
+        "wait",
+        "i need to",
+        "the execution sequence",
+        "the required short synthesis",
         "the request requires",
         "since all actions",
         "the synthesized response",

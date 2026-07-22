@@ -454,6 +454,30 @@ class TestNoema(unittest.TestCase):
 
         self.assertEqual(answer, "")
 
+    def test_environment_trims_meta_tail_after_valid_answer(self):
+        class CommentWorkspace(NoemaEnvironment):
+            pass
+
+        raw_answer = (
+            "This positive feedback indicates high satisfaction with the LLM's performance. "
+            "(Synthesis based on stored/labeled data.)\n"
+            "The execution sequence successfully added the comment and classified it as Positive. "
+            "The required short synthesis summarizes this finding.\n"
+            "Final Answer Generation.\n"
+            "Outputting Final Answer.\n"
+            "Wait... I need to ensure my synthesized response matches the requested *"
+        )
+
+        answer = CommentWorkspace()(
+            "Answer cleanly.",
+            planner=lambda environment, prompt, run: {"answer": raw_answer},
+        )
+
+        self.assertEqual(
+            answer,
+            "This positive feedback indicates high satisfaction with the LLM's performance.",
+        )
+
     def test_environment_llm_final_generation_uses_strict_final_mode(self):
         class FakeModel:
             def __init__(self):
