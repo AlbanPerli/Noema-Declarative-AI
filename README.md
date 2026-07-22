@@ -402,51 +402,75 @@ from Noema import *
 llm = LLM("/models/gemma.gguf", reasoning="off")
 
 
-class CommentStore(NoemaEnvironment):
-    comments = Memory(default_factory=list)
+class FeedbackAnalyzer(NoemaEnvironment):
+    product_area = Visible("local LLM orchestration and developer experience")
 
     @tool
-    def add_comment(self, comment: str):
-        self.comments.append(comment)
-        return {"count": len(self.comments)}
-
-
-class CommentLabeler(NoemaEnvironment):
-    labels = Memory(default_factory=dict)
-
-    @tool
-    def label_comment(self, comment: str, label: str):
-        self.labels[comment] = label
-        return self.labels
+    def extract_signals(self, comment: str):
+        return {
+            "sentiment": "positive",
+            "intent": "feature_request",
+            "intensity": "strong",
+            "evidence": comment,
+        }
 
     @tool
-    def known_labels(self):
-        return sorted(set(self.labels.values()))
+    def estimate_impact(self, sentiment: str, intent: str, intensity: str):
+        return {"priority": "high", "reason": f"{intent} / {intensity} / {sentiment}"}
 
 
-class CommentWorkspace(NoemaEnvironment):
-    store = Component(CommentStore)
-    labeler = Component(CommentLabeler)
-    tone = Visible("concise and factual")
+class ProductDecisionBoard(NoemaEnvironment):
+    insights = Memory(default_factory=list)
+    opportunities = Memory(default_factory=list)
 
-    @visible
-    @property
-    def comment_count(self):
-        return len(self.store.comments)
+    @tool
+    def record_insight(self, title: str, evidence: str, sentiment: str, priority: str):
+        insight = {"title": title, "evidence": evidence, "sentiment": sentiment, "priority": priority}
+        self.insights.append(insight)
+        return insight
+
+    @tool
+    def open_opportunity(self, title: str, hypothesis: str, expected_user_value: str):
+        opportunity = {"title": title, "hypothesis": hypothesis, "expected_user_value": expected_user_value}
+        self.opportunities.append(opportunity)
+        return opportunity
 
 
-workspace = CommentWorkspace(llm=llm)
+class ExperimentPlanner(NoemaEnvironment):
+    experiments = Memory(default_factory=list)
 
-answer = workspace("""
-Store this comment, classify it, and answer with a short synthesis:
-This llm is very good!
-""", max_tokens=80)
+    @tool
+    def design_experiment(self, hypothesis: str, metric: str, rollout: str):
+        experiment = {"hypothesis": hypothesis, "metric": metric, "rollout": rollout}
+        self.experiments.append(experiment)
+        return experiment
+
+
+class ProductFeedbackWorkshop(NoemaEnvironment):
+    analyzer = Component(FeedbackAnalyzer, description="Find sentiment, intent, and impact.")
+    board = Component(ProductDecisionBoard, description="Persist product decisions from the run.")
+    planner = Component(ExperimentPlanner, description="Turn decisions into experiments.")
+
+    product = Visible("Noema declarative local-LLM programming interface")
+
+
+workshop = ProductFeedbackWorkshop(llm=llm)
+
+answer = workshop("""
+Triage this product feedback. Use the component tools to extract signals,
+estimate impact, record an insight, open an opportunity, design one validation
+experiment, then finish with a concise product decision.
+
+Feedback: Noema's object composition feels powerful. I want a clearer way to see
+which object acted and why.
+""", max_steps=8, max_tokens=120)
 ```
 
 Only `Memory`, `Visible`, `Component`, `@visible`, and `@tool` are projected
 into the LLM environment. Regular Python attributes and methods stay private.
 Component tools are available with qualified names such as
-`store.add_comment` and `labeler.label_comment`.
+`analyzer.extract_signals`, `board.record_insight`, and
+`planner.design_experiment`.
 
 <details>
   <summary>LLM output:</summary>
