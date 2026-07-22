@@ -428,7 +428,7 @@ workspace = CommentWorkspace(llm=llm)
 answer = workspace("""
 Store this comment, classify it, and answer with a short synthesis:
 This llm is very good!
-""")
+""", max_tokens=80)
 ```
 
 Only `Memory`, `Visible`, `@visible`, and `@tool` are projected into the LLM

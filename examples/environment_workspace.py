@@ -52,7 +52,8 @@ def main():
         """
         Store this comment, classify it, and answer with a short synthesis:
         This llm is very good!
-        """
+        """,
+        max_tokens=80,
     )
     print(answer)
 

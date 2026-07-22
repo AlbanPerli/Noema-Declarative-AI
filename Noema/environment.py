@@ -144,6 +144,13 @@ class NoemaEnvironment:
     max_steps = 8
     max_tokens = 256
     argument_tokens = 128
+    final_stop_sequences = (
+        "\n***",
+        "\n*Self-Correction",
+        "\nSelf-Correction",
+        "\nThe chosen output format",
+        "\n#NOEMA_ENV",
+    )
 
     def __init__(self, llm=None, **state):
         if llm is not None:
@@ -172,7 +179,7 @@ class NoemaEnvironment:
         for step_index in range(max_steps):
             decision = self._decide(prompt, run, step_index, max_tokens, planner)
             if decision.is_final:
-                run.answer = decision.answer or ""
+                run.answer = _clean_final_answer(decision.answer or "")
                 return run if return_run else run.answer
 
             observation = self.invoke(decision.tool, **decision.args)
@@ -282,9 +289,12 @@ class NoemaEnvironment:
 
         if action == "final":
             answer_name = f"noema_environment_final_{step_index}"
+            llm += self._final_prompt(prompt, run)
+            generation_kwargs = runtime.generation_kwargs(max_tokens)
+            generation_kwargs["stop"] = list(self.final_stop_sequences)
             llm += runtime.reasoning_prelude()
             llm += f"#NOEMA_ENV_FINAL_{step_index}: "
-            llm += gen(name=answer_name, **runtime.generation_kwargs(max_tokens)) + "\n"
+            llm += gen(name=answer_name, **generation_kwargs) + "\n"
             runtime.llm = llm
             return EnvironmentDecision.final(llm[answer_name])
 
@@ -324,6 +334,25 @@ class NoemaEnvironment:
             Choose the next action.
             """
         ).strip()
+
+    def _final_prompt(self, prompt, run):
+        return textwrap.dedent(
+            f"""
+
+            FINAL RESPONSE MODE
+            Produce only the user-facing answer to the original prompt.
+            Do not describe tool calls, observations, internal reasoning,
+            planning, self-corrections, prompt rules, or output format.
+            Do not write <think> blocks.
+            Do not prefix the answer with "Final Answer:".
+
+            ORIGINAL USER PROMPT:
+            {prompt}
+
+            FINAL OBSERVATIONS:
+            {_format_observations(run.observations)}
+            """
+        ).strip() + "\n"
 
     def _argument_prompt(self, spec):
         return textwrap.dedent(
@@ -434,6 +463,68 @@ def _parse_json_object(value):
     if not isinstance(parsed, dict):
         raise ValueError(f"NoemaEnvironment expected JSON object arguments, got: {value!r}")
     return parsed
+
+
+def _clean_final_answer(value):
+    text = str(value_of(value)).strip()
+    if not text:
+        return ""
+
+    text = _remove_think_sections(text).strip()
+    text = _strip_answer_label(text)
+
+    cut_markers = (
+        "\n***",
+        "\n*self-correction",
+        "\nself-correction",
+        "\nthe chosen output format",
+        "\n#noema_env",
+    )
+    lower = text.lower()
+    cut_indexes = [lower.find(marker) for marker in cut_markers if lower.find(marker) >= 0]
+    if cut_indexes:
+        text = text[:min(cut_indexes)]
+
+    return text.strip()
+
+
+def _remove_think_sections(text):
+    lower = text.lower()
+    while "<think>" in lower and "</think>" in lower:
+        start = lower.find("<think>")
+        end = lower.find("</think>", start) + len("</think>")
+        text = text[:start] + text[end:]
+        lower = text.lower()
+
+    lower = text.lower()
+    closing_index = lower.rfind("</think>")
+    if closing_index >= 0:
+        text = text[closing_index + len("</think>"):]
+
+    lower = text.lower()
+    opening_index = lower.find("<think>")
+    if opening_index >= 0:
+        text = text[:opening_index]
+
+    return text
+
+
+def _strip_answer_label(text):
+    lower = text.lower()
+    candidates = []
+    for marker in ("final answer:", "final answer -", "answer:", "reponse finale:"):
+        if lower.startswith(marker):
+            candidates.append((0, marker))
+        newline_marker = f"\n{marker}"
+        index = lower.rfind(newline_marker)
+        if index >= 0:
+            candidates.append((index + 1, marker))
+
+    if not candidates:
+        return text
+
+    index, marker = max(candidates, key=lambda candidate: candidate[0])
+    return text[index + len(marker):].strip()
 
 
 def _json_safe(value):

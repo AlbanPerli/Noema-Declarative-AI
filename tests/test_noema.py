@@ -395,6 +395,65 @@ class TestNoema(unittest.TestCase):
         self.assertEqual(workspace.last_run.observations[0].tool, "add_comment")
         self.assertEqual(workspace.last_run.observations[0].result, {"count": 1})
 
+    def test_environment_cleans_reasoning_artifacts_from_final_answer(self):
+        class CommentWorkspace(NoemaEnvironment):
+            pass
+
+        raw_answer = (
+            "Synthesis of actions taken: I used tools and reasoned internally.\n"
+            "</think>\n"
+            "Final Answer: This LLM received positive feedback.\n"
+            "***\n"
+            "*Self-Correction/Refinement during thought process:* not relevant"
+        )
+
+        answer = CommentWorkspace()(
+            "Answer cleanly.",
+            planner=lambda environment, prompt, run: {"answer": raw_answer},
+        )
+
+        self.assertEqual(answer, "This LLM received positive feedback.")
+
+    def test_environment_llm_final_generation_uses_strict_final_mode(self):
+        class FakeModel:
+            def __init__(self):
+                self.prompt = ""
+
+            def __add__(self, value):
+                self.prompt += str(value)
+                return self
+
+            def __getitem__(self, name):
+                if name == "noema_environment_action_0":
+                    return "final"
+                if name == "noema_environment_final_0":
+                    return "Final Answer: Clean final answer.\n***\nSelf-Correction: no"
+                raise KeyError(name)
+
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens, "temperature": 0.1}
+
+            def reasoning_prelude(self):
+                return "<think>\n\n</think>\n\n"
+
+        workspace = NoemaEnvironment()
+        fake_runtime = FakeRuntime()
+
+        with patch.object(workspace, "_activate_runtime", return_value=fake_runtime):
+            with patch("Noema.environment.select", return_value="final"):
+                with patch("Noema.environment.gen", return_value="generated") as mocked_gen:
+                    answer = workspace("Answer cleanly.", max_tokens=32)
+
+        self.assertEqual(answer, "Clean final answer.")
+        self.assertIn("FINAL RESPONSE MODE", fake_runtime.llm.prompt)
+        self.assertIn("Do not write <think> blocks.", fake_runtime.llm.prompt)
+        self.assertEqual(mocked_gen.call_args.kwargs["max_tokens"], 32)
+        self.assertIn("\n***", mocked_gen.call_args.kwargs["stop"])
+
     def test_environment_rejects_unknown_tools(self):
         class EmptyWorkspace(NoemaEnvironment):
             pass
