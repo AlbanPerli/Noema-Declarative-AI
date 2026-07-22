@@ -19,6 +19,8 @@ if HAS_RUNTIME_DEPS:
         Noema,
         LLM,
         Automaton,
+        SelectGraph,
+        WeightedSelectGraph,
         Paragraph,
         Sentence,
         SemPy,
@@ -39,6 +41,8 @@ if HAS_RUNTIME_DEPS:
 class TestNoema(unittest.TestCase):
     def test_public_api_imports(self):
         self.assertIsNotNone(Automaton)
+        self.assertIsNotNone(SelectGraph)
+        self.assertIs(WeightedSelectGraph, SelectGraph)
         self.assertIs(Word.return_type, str)
         self.assertIs(Int.return_type, int)
         self.assertIs(Float.return_type, float)
@@ -250,6 +254,65 @@ class TestNoema(unittest.TestCase):
             "psychology": "psychology output",
             "product": "product output",
         })
+
+    def test_select_graph_lets_llm_choose_weighted_transition_labels(self):
+        graph = SelectGraph("phrase", separator=" ")
+        graph.transition("start", "tone", ["positive", "negative"], weight=0.8)
+        graph.transition("tone", "end", ["signal"], weight=0.5)
+
+        choices = iter(["positive", "signal"])
+
+        result = graph.run(
+            "start",
+            objective="Build a compact classification.",
+            selector=lambda prompt, options, context: next(choices),
+        )
+
+        self.assertEqual(result.path, ["start", "tone", "end"])
+        self.assertEqual(result.labels, ["positive", "signal"])
+        self.assertEqual(result.text, "positive signal")
+        self.assertEqual(result.weight, 0.4)
+
+    def test_select_graph_accepts_noema_value_from_selector(self):
+        graph = SelectGraph("phrase")
+        graph.transition("start", "end", ["positive"])
+        selected = FakeGeneratedValue("choice", "positive")
+
+        result = graph.run("start", selector=lambda prompt, options, context: selected)
+
+        self.assertEqual(result.text, "positive")
+
+    def test_select_graph_filters_transitions_with_conditions(self):
+        graph = SelectGraph("phrase", separator="-")
+        context = {"allow_critical": False}
+        graph.transition("start", "critical", ["critical"], when=lambda ctx: ctx["allow_critical"])
+        graph.transition("start", "normal", ["normal"])
+
+        result = graph.run(
+            "start",
+            context=context,
+            selector=lambda prompt, options, context: options[0],
+        )
+
+        self.assertEqual(result.path, ["start", "normal"])
+        self.assertEqual(result.text, "normal")
+
+    def test_select_graph_rejects_ambiguous_outgoing_labels(self):
+        graph = SelectGraph("phrase")
+        graph.transition("start", "a", ["same"])
+        graph.transition("start", "b", ["same"])
+
+        with self.assertRaisesRegex(ValueError, "Ambiguous"):
+            graph.run("start", selector=lambda prompt, options, context: "same")
+
+    def test_select_graph_can_render_mermaid(self):
+        graph = SelectGraph("phrase")
+        graph.transition("start", "tone", ["positive", "negative"], weight=0.8)
+
+        mermaid = graph.to_mermaid()
+
+        self.assertIn("flowchart TD", mermaid)
+        self.assertIn("positive, negative / w=0.8", mermaid)
 
     def test_llm_can_disable_reasoning(self):
         llm = LLM("model.gguf", reasoning="off")

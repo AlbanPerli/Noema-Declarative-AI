@@ -11,12 +11,13 @@ from .llm import LLM
 from .reset import Reset
 from .semPy import SemPy
 from .automaton import Automaton
+from .selection_graph import SelectGraph, WeightedSelectGraph
 
 __all__ = ['Generator', 'Select', 'SelectOrNone', 
            'Int', 'Float', 'Bool', 'Date', 
            'DateTime', 'Time', 'Phone', 'Email', 
            'Word', 'ListOf', 'Information', 'Sentence', 
            'Free', 'Paragraph', 'Noema', 'LLM', 'Reset',
-           'SemPy', 'Substring', 'Automaton',
+           'SemPy', 'Substring', 'Automaton', 'SelectGraph', 'WeightedSelectGraph',
            'Python', 'Swift', 'Java', 'C', 'Cpp', 'CSharp',
            'JavaScript', 'TypeScript', 'Ruby', 'PHP', 'Go', 'Rust', 'Kotlin', 'Dart', 'Scala', 'R', 'MATLAB', 'Julia', 'Lua', 'Perl', 'Shell', 'PowerShell', 'Bash', 'COBOL', 'Fortran', 'Assembly', 'Verilog', 'VHDL']

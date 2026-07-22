@@ -341,6 +341,58 @@ with graph.parallel("expert-review") as review:
 outputs = review.run()
 ```
 
+### Weighted Select Graphs
+
+`SelectGraph` is a constrained generation mode for chaining multiple
+`Select()` calls as a weighted automaton. Each transition is formalized by a
+list of possible strings. At each state, Noema asks the LLM to choose exactly
+one available transition label, then moves to the transition target.
+
+```python
+from Noema import *
+
+graph = SelectGraph("compact-comment-label", separator=" ")
+
+graph.transition(
+    "start",
+    "sentiment",
+    ["positive", "neutral", "negative"],
+    weight=1.0,
+)
+graph.transition(
+    "sentiment",
+    "intensity",
+    ["weak", "clear", "strong"],
+    weight=0.7,
+)
+graph.transition(
+    "intensity",
+    "end",
+    ["satisfaction", "friction", "request"],
+    weight=0.5,
+)
+
+result = graph.run(
+    "start",
+    objective="Build a compact label for the analysed comment.",
+)
+
+print(result.text)    # for example: "positive strong satisfaction"
+print(result.path)    # ["start", "sentiment", "intensity", "end"]
+print(result.weight)  # product of selected transition weights
+```
+
+Transitions can also be conditionally available:
+
+```python
+graph.transition(
+    "start",
+    "critical",
+    ["bug", "complaint"],
+    when=lambda context: context["allow_critical"],
+)
+```
+
 <details>
   <summary>LLM output:</summary>
 [INST]
