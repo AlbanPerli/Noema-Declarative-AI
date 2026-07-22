@@ -26,6 +26,8 @@ class Generator(BaseGenerator):
     return_type = None
     hint = None
     stops = []
+    stop_regex = None
+    save_stop_text = False
     max_tokens = 64
     
     def __init__(self, value=None, idx:int = None, var: str = None, options: list = None):
@@ -55,11 +57,19 @@ class Generator(BaseGenerator):
         generation_kwargs = runtime.generation_kwargs(self.max_tokens)
         if self.regex:
             generation_kwargs["regex"] = self.regex
+        if self.stop_regex:
+            generation_kwargs["stop_regex"] = self.stop_regex
         if self.stops:
             generation_kwargs["stop"] = self.stops
+        if self.save_stop_text:
+            generation_kwargs["save_stop_text"] = "response_stop_text"
         llm += runtime.reasoning_prelude()
         llm += display_var + " " + gen(name="response", **generation_kwargs) + "\n"
         res = llm["response"]
+        if self.save_stop_text:
+            stop_text = llm["response_stop_text"]
+            if stop_text in ".!?":
+                res += stop_text
         runtime.llm = llm
         self.noema = self.value
         if self.return_type == bool:

@@ -140,7 +140,7 @@ Always looking for the best way to perform it.
 #EVALUATE : Evaluating the consequence. (Response format: one sentence. Stop after the final punctuation)
 #POINT_OF_VIEW : f'Providing a point of view about the task different than {povs}' (Response format: one sentence. Stop after the final punctuation)
 #IMPORTANT : I need to be more creative!
-#CONCLUSION : Providing a conclusion which is a synthesis of the previous steps. (Response format: one concise paragraph. Do not repeat phrases)
+#CONCLUSION : Providing a conclusion which is a synthesis of the previous steps. (Response format: one concise final sentence. Do not repeat phrases)
 [/INST]
 
 #TASK: How to write a good iOS application?
@@ -283,7 +283,7 @@ You always produce a deep analysis of the comment.
 
 #ANALYSIS : f'Analysing the comment as a {specialist}' (Response format: one sentence. Stop after the final punctuation)
 
-#SYNTHESIS : Providing a synthesis of the analysis. (Response format: one concise paragraph. Do not repeat phrases)
+#SYNTHESIS : Providing a synthesis of the analysis. (Response format: one concise final sentence. Do not repeat phrases)
 
 [/INST]
 

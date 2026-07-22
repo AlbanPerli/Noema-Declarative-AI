@@ -6,15 +6,17 @@ class Sentence(Generator):
     regex = None
     hint = "Response format: one sentence. Stop after the final punctuation"
     return_type = str
-    stops = ["\n", "#"]
+    stop_regex = r"[.!?]"
+    save_stop_text = True
     max_tokens = 36
     
 class Paragraph(Generator):
     regex = None
-    hint = "Response format: one concise paragraph. Do not repeat phrases"
+    hint = "Response format: one concise final sentence. Do not repeat phrases"
     return_type = str
-    stops = ["\n", "#"]
-    max_tokens = 120
+    stop_regex = r"[.!?]"
+    save_stop_text = True
+    max_tokens = 80
     
 class Free(Generator):
     regex = ""

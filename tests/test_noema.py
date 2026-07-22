@@ -46,12 +46,14 @@ class TestNoema(unittest.TestCase):
 
     def test_text_generators_have_token_limits(self):
         self.assertEqual(Sentence.max_tokens, 36)
-        self.assertEqual(Paragraph.max_tokens, 120)
+        self.assertEqual(Paragraph.max_tokens, 80)
         self.assertLess(Word.max_tokens, Sentence.max_tokens)
         self.assertIsNone(Sentence.regex)
         self.assertIsNone(Paragraph.regex)
-        self.assertIn("\n", Sentence.stops)
-        self.assertIn("\n", Paragraph.stops)
+        self.assertEqual(Sentence.stop_regex, r"[.!?]")
+        self.assertEqual(Paragraph.stop_regex, r"[.!?]")
+        self.assertTrue(Sentence.save_stop_text)
+        self.assertTrue(Paragraph.save_stop_text)
 
     def test_text_generation_uses_stop_without_natural_language_regex(self):
         class FakeRuntime:
@@ -73,7 +75,9 @@ class TestNoema(unittest.TestCase):
                 return self
 
             def __getitem__(self, name):
-                return "A direct sentence."
+                if name == "response_stop_text":
+                    return "."
+                return "A direct sentence"
 
         fake_runtime = FakeRuntime()
 
@@ -83,7 +87,8 @@ class TestNoema(unittest.TestCase):
 
         self.assertEqual(sentence.value, "A direct sentence.")
         self.assertNotIn("regex", mocked_gen.call_args.kwargs)
-        self.assertEqual(mocked_gen.call_args.kwargs["stop"], ["\n", "#"])
+        self.assertEqual(mocked_gen.call_args.kwargs["stop_regex"], r"[.!?]")
+        self.assertEqual(mocked_gen.call_args.kwargs["save_stop_text"], "response_stop_text")
 
     def test_structured_generation_does_not_pass_empty_stop_list(self):
         class FakeRuntime:
