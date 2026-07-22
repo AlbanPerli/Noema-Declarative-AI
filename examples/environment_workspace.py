@@ -192,12 +192,23 @@ class StructuredRole(NoemaEnvironment):
     role_goal = Visible("produce a structured result")
 
     submissions = Memory(default_factory=list)
+    _expected_result_schema: dict[str, Any] | None = None
 
     @tool(
         description=(
             "Submit the role result. The payload argument must be a JSON object "
             "that conforms to the requested schema."
-        )
+        ),
+        args=lambda self: (
+            {"payload": self._expected_result_schema}
+            if self._expected_result_schema is not None
+            else None
+        ),
+        returns=lambda self: (
+            {"role": "string", "payload": self._expected_result_schema}
+            if self._expected_result_schema is not None
+            else None
+        ),
     )
     def submit_result(self, payload: dict):
         if not isinstance(payload, dict):
@@ -245,34 +256,44 @@ class StructuredRole(NoemaEnvironment):
         Appelle le rôle et récupère son résultat structuré.
         """
         self.submissions.clear()
+        self._expected_result_schema = expected_schema
 
-        raw_answer = self(
-            f"""
-            You are acting as: {self.role_name}
+        try:
+            raw_answer = self(
+                f"""
+                You are acting as: {self.role_name}
 
-            Your role objective:
-            {self.role_goal}
+                Your role objective:
+                {self.role_goal}
 
-            Task:
-            {instructions}
+                Task:
+                {instructions}
 
-            Required JSON structure:
-            {safe_json_dumps(expected_schema)}
+                Required JSON structure:
+                {safe_json_dumps(expected_schema)}
 
-            Rules:
-            - Work independently.
-            - Do not assume another model has checked your work.
-            - Identify uncertainty explicitly.
-            - Do not expose hidden chain-of-thought.
-            - Give concise conclusions and observable justifications only.
-            - Call submit_result exactly once with this argument shape:
-              {{"payload": <object matching the Required JSON structure>}}
-            - Do not use placeholders such as "...", "TODO", or "TBD".
-            - Do not call final before submit_result.
-            """,
-            max_steps=max_steps,
-            max_tokens=max_tokens,
-        )
+                Rules:
+                - Work independently.
+                - Do not assume another model has checked your work.
+                - Identify uncertainty explicitly.
+                - Do not expose hidden chain-of-thought.
+                - Give concise conclusions and observable justifications only.
+                - Call submit_result exactly once when the result is ready.
+                - Noema will generate the submit_result payload as a structured JSON object.
+                - Do not serialize payload as a string.
+                - Do not use placeholders such as "...", "TODO", or "TBD".
+                - Do not call final before submit_result.
+                """,
+                max_steps=max_steps,
+                max_tokens=max_tokens,
+            )
+        except RuntimeError:
+            latest = self.latest_result()
+            if latest and isinstance(latest.get("payload"), dict):
+                return latest["payload"]
+            raise
+        finally:
+            self._expected_result_schema = None
 
         latest = self.latest_result()
 

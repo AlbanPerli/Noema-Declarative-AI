@@ -15,6 +15,7 @@ if HAS_RUNTIME_DEPS:
         Bool,
         Float,
         Int,
+        JsonObject,
         ListOf,
         Noema,
         LLM,
@@ -65,6 +66,7 @@ class TestNoema(unittest.TestCase):
         self.assertIs(Bool.return_type, bool)
         self.assertIs(Sentence.return_type, str)
         self.assertIs(Paragraph.return_type, str)
+        self.assertIs(JsonObject.return_type, dict)
 
     def test_llm_defaults_leave_room_for_nested_examples(self):
         llm = LLM("model.gguf")
@@ -544,11 +546,22 @@ class TestNoema(unittest.TestCase):
         self.assertIn("Include every required key exactly once.", prompt)
         self.assertIn("Use double quotes for every key and string value.", prompt)
 
-    def test_environment_accepts_python_literal_arguments_for_single_dict_payload(self):
+    def test_environment_generates_structured_dict_arguments_with_guidance_json_schema(self):
         class StructuredWorkspace(NoemaEnvironment):
             submissions = Memory(default_factory=list)
 
-            @tool
+            @tool(
+                args={
+                    "payload": {
+                        "answer": "string",
+                        "assumptions": ["string"],
+                    }
+                },
+                returns={
+                    "answer": "string",
+                    "assumptions": ["string"],
+                },
+            )
             def submit_result(self, payload: dict):
                 self.submissions.append(payload)
                 return payload
@@ -558,7 +571,7 @@ class TestNoema(unittest.TestCase):
                 self.prompt = ""
                 self.values = {
                     "noema_environment_action_0": "tool:submit_result",
-                    "noema_environment_args_0": "{'answer': 'ok', 'assumptions': []}",
+                    "response": '{"payload": {"answer": "ok", "assumptions": []}}',
                     "noema_environment_action_1": "final",
                     "noema_environment_final_1": "Final Answer: Done.",
                 }
@@ -581,20 +594,96 @@ class TestNoema(unittest.TestCase):
             def reasoning_prelude(self):
                 return ""
 
-        workspace = StructuredWorkspace()
+            def append_to_chain(self, value):
+                pass
 
-        with patch.object(workspace, "_activate_runtime", return_value=FakeRuntime()):
-            with patch("Noema.environment.select", return_value="selected"):
-                with patch("Noema.environment.gen", return_value="generated"):
+        workspace = StructuredWorkspace()
+        fake_runtime = FakeRuntime()
+
+        with patch.object(workspace, "_activate_runtime", return_value=fake_runtime):
+            with patch("Noema.json_gen.current_runtime", return_value=fake_runtime):
+                with patch("Noema.json_gen.guidance_json", return_value="json-object") as mocked_json:
                     answer = workspace("Submit a structured result.")
+
+        generated_schema = mocked_json.call_args.kwargs["schema"]
 
         self.assertEqual(answer, "Done.")
         self.assertEqual(workspace.submissions, [{"answer": "ok", "assumptions": []}])
         self.assertEqual(workspace.last_run.observations[0].args, {
             "payload": {"answer": "ok", "assumptions": []},
         })
+        self.assertEqual(generated_schema["required"], ["payload"])
+        self.assertEqual(generated_schema["properties"]["payload"]["required"], ["answer", "assumptions"])
+        self.assertEqual(generated_schema["properties"]["payload"]["additionalProperties"], False)
+        self.assertEqual(generated_schema["properties"]["payload"]["properties"]["assumptions"]["type"], "array")
 
-    def test_environment_records_unparseable_tool_arguments_as_observation(self):
+    def test_environment_resolves_dynamic_tool_schema_from_tool_declaration(self):
+        class StructuredWorkspace(NoemaEnvironment):
+            result_schema = Visible({
+                "answer": "string",
+                "publish": True,
+            })
+            submissions = Memory(default_factory=list)
+
+            @tool(
+                args=lambda self: {"payload": self.result_schema},
+                returns=lambda self: {"payload": self.result_schema},
+            )
+            def submit_result(self, payload: dict):
+                self.submissions.append(payload)
+                return {"payload": payload}
+
+        class FakeModel:
+            def __init__(self):
+                self.prompt = ""
+                self.values = {
+                    "noema_environment_action_0": "tool:submit_result",
+                    "response": '{"payload": {"answer": "ok", "publish": true}}',
+                    "noema_environment_action_1": "final",
+                    "noema_environment_final_1": "Final Answer: Done.",
+                }
+
+            def __add__(self, value):
+                self.prompt += str(value)
+                return self
+
+            def __getitem__(self, name):
+                return self.values[name]
+
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens}
+
+            def reasoning_prelude(self):
+                return ""
+
+            def append_to_chain(self, value):
+                pass
+
+        workspace = StructuredWorkspace()
+        fake_runtime = FakeRuntime()
+
+        with patch.object(workspace, "_activate_runtime", return_value=fake_runtime):
+            with patch("Noema.json_gen.current_runtime", return_value=fake_runtime):
+                with patch("Noema.json_gen.guidance_json", return_value="json-object") as mocked_json:
+                    answer = workspace("Submit a structured result.")
+
+        generated_schema = mocked_json.call_args.kwargs["schema"]
+        observation = workspace.last_run.observations[0]
+
+        self.assertEqual(answer, "Done.")
+        self.assertEqual(workspace.submissions, [{"answer": "ok", "publish": True}])
+        self.assertEqual(observation.result, {"payload": {"answer": "ok", "publish": True}})
+        self.assertEqual(
+            generated_schema["properties"]["payload"]["properties"]["publish"]["type"],
+            "boolean",
+        )
+
+    def test_environment_rejects_dict_tool_without_argument_schema(self):
         class StructuredWorkspace(NoemaEnvironment):
             @tool
             def submit_result(self, payload: dict):
@@ -605,9 +694,8 @@ class TestNoema(unittest.TestCase):
                 self.prompt = ""
                 self.values = {
                     "noema_environment_action_0": "tool:submit_result",
-                    "noema_environment_args_0": "{answer: nope}",
                     "noema_environment_action_1": "final",
-                    "noema_environment_final_1": "Final Answer: Retried later.",
+                    "noema_environment_final_1": "Final Answer: Declare a schema first.",
                 }
 
             def __add__(self, value):
@@ -637,11 +725,104 @@ class TestNoema(unittest.TestCase):
 
         observation = workspace.last_run.observations[0]
 
-        self.assertEqual(answer, "Retried later.")
+        self.assertEqual(answer, "Declare a schema first.")
         self.assertEqual(observation.tool, "submit_result")
-        self.assertEqual(observation.args, {"_raw": "{answer: nope}"})
-        self.assertEqual(observation.result["error"]["type"], "invalid_tool_arguments")
-        self.assertIn("expected JSON object arguments", observation.result["error"]["message"])
+        self.assertEqual(observation.args, {})
+        self.assertEqual(observation.result["error"]["type"], "invalid_tool_argument_schema")
+        self.assertIn("requires a declared argument schema", observation.result["error"]["message"])
+
+    def test_environment_generates_primitive_tool_arguments_with_guidance_json_schema(self):
+        class MetricsWorkspace(NoemaEnvironment):
+            observations = Memory(default_factory=list)
+
+            @tool
+            def record_metric(self, count: int, score: float, enabled: bool, note: str):
+                payload = {
+                    "count": count,
+                    "score": score,
+                    "enabled": enabled,
+                    "note": note,
+                }
+                self.observations.append(payload)
+                return payload
+
+        class FakeModel:
+            def __init__(self):
+                self.prompt = ""
+                self.values = {
+                    "noema_environment_action_0": "tool:record_metric",
+                    "response": (
+                        '{"count": 3, "score": 8.5, "enabled": true, '
+                        '"note": "The metric is stable."}'
+                    ),
+                    "noema_environment_action_1": "final",
+                    "noema_environment_final_1": "Final Answer: Metric recorded.",
+                }
+
+            def __add__(self, value):
+                self.prompt += str(value)
+                return self
+
+            def __getitem__(self, name):
+                return self.values[name]
+
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens}
+
+            def reasoning_prelude(self):
+                return ""
+
+            def append_to_chain(self, value):
+                pass
+
+        workspace = MetricsWorkspace()
+        fake_runtime = FakeRuntime()
+
+        with patch.object(workspace, "_activate_runtime", return_value=fake_runtime):
+            with patch("Noema.json_gen.current_runtime", return_value=fake_runtime):
+                with patch("Noema.json_gen.guidance_json", return_value="json-object") as mocked_json:
+                    answer = workspace("Record the metric.")
+
+        generated_schema = mocked_json.call_args.kwargs["schema"]
+
+        self.assertEqual(answer, "Metric recorded.")
+        self.assertEqual(
+            workspace.observations,
+            [{
+                "count": 3,
+                "score": 8.5,
+                "enabled": True,
+                "note": "The metric is stable.",
+            }],
+        )
+        self.assertEqual(generated_schema["properties"]["count"]["type"], "integer")
+        self.assertEqual(generated_schema["properties"]["score"]["type"], "number")
+        self.assertEqual(generated_schema["properties"]["enabled"]["type"], "boolean")
+        self.assertEqual(generated_schema["properties"]["note"]["type"], "string")
+
+    def test_environment_reports_invalid_tool_result_from_declared_schema(self):
+        class BrokenWorkspace(NoemaEnvironment):
+            @tool(returns={"count": 0, "status": "ok|error"})
+            def latest(self):
+                return {"count": "not an int", "status": "ok"}
+
+        workspace = BrokenWorkspace()
+        observation = workspace.invoke("latest")
+
+        self.assertEqual(observation.tool, "latest")
+        self.assertEqual(observation.result["error"]["type"], "invalid_tool_result")
+        self.assertIn("result.count must be an integer", observation.result["error"]["message"])
+
+    def test_environment_records_unparseable_tool_arguments_as_observation(self):
+        from Noema.environment import _parse_json_object
+
+        with self.assertRaisesRegex(ValueError, "expected JSON object arguments"):
+            _parse_json_object("{answer: nope}")
 
     def test_environment_llm_action_options_include_component_tools(self):
         class CommentStore(NoemaEnvironment):
@@ -896,7 +1077,7 @@ class TestNoema(unittest.TestCase):
                 self.prompt = ""
                 self.values = {
                     "noema_environment_action_0": "tool:add_comment",
-                    "noema_environment_args_0": '{"comment": "This llm is very good!"}',
+                    "response": '{"comment": "This llm is very good!"}',
                     "noema_environment_action_1": "final",
                     "noema_environment_final_1": "Final Answer: Stored as positive.",
                 }
@@ -919,14 +1100,19 @@ class TestNoema(unittest.TestCase):
             def reasoning_prelude(self):
                 return ""
 
+            def append_to_chain(self, value):
+                pass
+
         workspace = CommentWorkspace()
         fake_runtime = FakeRuntime()
 
         with patch.object(workspace, "_activate_runtime", return_value=fake_runtime):
-            with patch("Noema.environment.select", return_value="selected"):
-                with patch("Noema.environment.gen", return_value="generated"):
-                    with patch("builtins.print") as mocked_print:
-                        answer = workspace("Store and classify.")
+            with patch("Noema.json_gen.current_runtime", return_value=fake_runtime):
+                with patch("Noema.json_gen.guidance_json", return_value="json-object"):
+                    with patch("Noema.environment.select", return_value="selected"):
+                        with patch("Noema.environment.gen", return_value="generated"):
+                            with patch("builtins.print") as mocked_print:
+                                answer = workspace("Store and classify.")
 
         printed = "\n".join(call.args[0] for call in mocked_print.call_args_list)
 
