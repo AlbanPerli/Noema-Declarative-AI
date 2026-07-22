@@ -476,6 +476,62 @@ class TestNoema(unittest.TestCase):
         self.assertEqual(mocked_gen.call_args.kwargs["max_tokens"], 32)
         self.assertIn("\n***", mocked_gen.call_args.kwargs["stop"])
 
+    def test_environment_verbose_llm_loop_prints_colored_logs(self):
+        class CommentWorkspace(NoemaEnvironment):
+            comments = Memory(default_factory=list)
+
+            @tool
+            def add_comment(self, comment: str):
+                self.comments.append(comment)
+                return {"count": len(self.comments)}
+
+        class FakeModel:
+            def __init__(self):
+                self.prompt = ""
+                self.values = {
+                    "noema_environment_action_0": "tool:add_comment",
+                    "noema_environment_args_0": '{"comment": "This llm is very good!"}',
+                    "noema_environment_action_1": "final",
+                    "noema_environment_final_1": "Final Answer: Stored as positive.",
+                }
+
+            def __add__(self, value):
+                self.prompt += str(value)
+                return self
+
+            def __getitem__(self, name):
+                return self.values[name]
+
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = True
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens}
+
+            def reasoning_prelude(self):
+                return ""
+
+        workspace = CommentWorkspace()
+        fake_runtime = FakeRuntime()
+
+        with patch.object(workspace, "_activate_runtime", return_value=fake_runtime):
+            with patch("Noema.environment.select", return_value="selected"):
+                with patch("Noema.environment.gen", return_value="generated"):
+                    with patch("builtins.print") as mocked_print:
+                        answer = workspace("Store and classify.")
+
+        printed = "\n".join(call.args[0] for call in mocked_print.call_args_list)
+
+        self.assertEqual(answer, "Stored as positive.")
+        self.assertIn("NOEMA_ENV_ACTION_0 = \033[93mtool:add_comment\033[0m", printed)
+        self.assertIn("NOEMA_ENV_ARGS_0 = \033[93m", printed)
+        self.assertIn("NOEMA_ENV_OBSERVATION_0 = \033[93m", printed)
+        self.assertIn("NOEMA_ENV_FINAL_1 = \033[93mStored as positive.\033[0m", printed)
+        self.assertIn("\033[94mChoose next environment action", printed)
+        self.assertIn("\033[94madd_comment(comment='This llm is very good!')\033[0m", printed)
+
     def test_environment_rejects_unknown_tools(self):
         class EmptyWorkspace(NoemaEnvironment):
             pass

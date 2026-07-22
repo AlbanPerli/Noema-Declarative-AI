@@ -13,6 +13,11 @@ from .llm import LLM, current_runtime
 from .predicates import value_of
 
 
+_YELLOW = "\033[93m"
+_BLUE = "\033[94m"
+_RESET = "\033[0m"
+
+
 @dataclass(frozen=True)
 class ToolMetadata:
     name: str | None = None
@@ -145,6 +150,11 @@ class NoemaEnvironment:
     max_tokens = 256
     argument_tokens = 128
     final_stop_sequences = (
+        "***",
+        "*Self-Correction",
+        "Self-Correction",
+        "Final Response Generation",
+        "Final response generation",
         "\n***",
         "\n*Self-Correction",
         "\nSelf-Correction",
@@ -158,6 +168,7 @@ class NoemaEnvironment:
         if llm is not None:
             self.llm = llm
         self.last_run: EnvironmentRun | None = None
+        self._noema_environment_verbose = False
         for name, value in state.items():
             setattr(self, name, value)
 
@@ -177,15 +188,18 @@ class NoemaEnvironment:
 
         run = EnvironmentRun(prompt=str(prompt))
         self.last_run = run
+        self._noema_environment_verbose = False
 
         for step_index in range(max_steps):
             decision = self._decide(prompt, run, step_index, max_tokens, planner)
             if decision.is_final:
                 run.answer = _clean_final_answer(decision.answer or "")
+                self._log_final(step_index, run.answer)
                 return run if return_run else run.answer
 
             observation = self.invoke(decision.tool, **decision.args)
             run.observations.append(observation)
+            self._log_observation(step_index, observation)
 
         raise RuntimeError("NoemaEnvironment reached max_steps without a final answer.")
 
@@ -279,6 +293,7 @@ class NoemaEnvironment:
 
     def _llm_decision(self, prompt, run, step_index, max_tokens):
         runtime = self._activate_runtime()
+        self._noema_environment_verbose = bool(getattr(runtime, "verbose", False))
         specs = self.tool_specs()
         action_options = ["final"] + [f"tool:{name}" for name in specs]
         action_name = f"noema_environment_action_{step_index}"
@@ -288,6 +303,7 @@ class NoemaEnvironment:
         llm += f"\n#NOEMA_ENV_ACTION_{step_index}: "
         llm += select(action_options, name=action_name) + "\n"
         action = llm[action_name]
+        self._log_action(step_index, action, action_options)
 
         if action == "final":
             answer_name = f"noema_environment_final_{step_index}"
@@ -313,6 +329,7 @@ class NoemaEnvironment:
                 **runtime.generation_kwargs(self.argument_tokens),
             ) + "\n"
             args = _parse_json_object(llm[args_name])
+            self._log_arguments(step_index, spec, args)
 
         runtime.llm = llm
         return EnvironmentDecision.call(tool_name, args)
@@ -372,6 +389,38 @@ class NoemaEnvironment:
         if llm is not None:
             return LLM(llm).activate()
         return current_runtime()
+
+    def _log_action(self, step_index, action, options):
+        if not self._noema_environment_verbose:
+            return
+        print(
+            f"NOEMA_ENV_ACTION_{step_index} = {_YELLOW}{action}{_RESET} "
+            f"({_BLUE}Choose next environment action : {options}{_RESET})"
+        )
+
+    def _log_arguments(self, step_index, spec, args):
+        if not self._noema_environment_verbose:
+            return
+        print(
+            f"NOEMA_ENV_ARGS_{step_index} = {_YELLOW}{_json_log(args)}{_RESET} "
+            f"({_BLUE}Build arguments for {spec.signature}{_RESET})"
+        )
+
+    def _log_observation(self, step_index, observation):
+        if not self._noema_environment_verbose:
+            return
+        print(
+            f"NOEMA_ENV_OBSERVATION_{step_index} = {_YELLOW}{_json_log(observation.result)}{_RESET} "
+            f"({_BLUE}{_format_tool_call(observation.tool, observation.args)}{_RESET})"
+        )
+
+    def _log_final(self, step_index, answer):
+        if not self._noema_environment_verbose:
+            return
+        print(
+            f"NOEMA_ENV_FINAL_{step_index} = {_YELLOW}{answer}{_RESET} "
+            f"({_BLUE}Final environment response{_RESET})"
+        )
 
     @classmethod
     def _memory_declarations(cls):
@@ -455,6 +504,17 @@ def _format_observations(observations):
         }
         lines.append(f"- {json.dumps(payload, ensure_ascii=True)}")
     return "\n".join(lines)
+
+
+def _format_tool_call(tool_name, args):
+    if not args:
+        return f"{tool_name}()"
+    arguments = ", ".join(f"{name}={value!r}" for name, value in args.items())
+    return f"{tool_name}({arguments})"
+
+
+def _json_log(value):
+    return json.dumps(_json_safe(value), ensure_ascii=True)
 
 
 def _parse_json_object(value):
