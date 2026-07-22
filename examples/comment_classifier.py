@@ -10,7 +10,10 @@ from _config import (
     model_path,
 )
 
-llm = LLM("/Users/al/Documents/IA/Models/LLM/gemma4/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf")
+llm = LLM(
+    "/Users/al/Documents/IA/Models/LLM/gemma4/gemma-4-26B-A4B-it-UD-Q4_K_M.gguf",
+    reasoning="off",
+)
 
 @Noema(llm)
 def comment_evaluation(comment):

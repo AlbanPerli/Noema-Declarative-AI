@@ -57,6 +57,7 @@ class Generator(BaseGenerator):
             generation_kwargs["regex"] = self.regex
         if self.stops:
             generation_kwargs["stop"] = self.stops
+        llm += runtime.reasoning_prelude()
         llm += display_var + " " + gen(name="response", **generation_kwargs) + "\n"
         res = llm["response"]
         runtime.llm = llm

@@ -38,6 +38,7 @@ class ListOf(BaseGenerator):
         llm += noesis 
 
         item_count = max_items or self._infer_count(self.value) or 4
+        llm += runtime.reasoning_prelude()
         res = []
         llm += display_var + "\n"
         for i in range(item_count):

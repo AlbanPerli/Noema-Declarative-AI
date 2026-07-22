@@ -79,6 +79,7 @@ class LLM:
     top_k: int | None = 40
     min_p: float | None = None
     repetition_penalty: float | None = 1.25
+    reasoning: bool | str | None = "auto"
     llama_cpp_kwargs: dict = field(default_factory=dict)
 
     def activate(self):
@@ -101,6 +102,7 @@ class LLM:
             top_k=self.top_k,
             min_p=self.min_p,
             repetition_penalty=self.repetition_penalty,
+            reasoning=self.reasoning,
             **self.llama_cpp_kwargs,
         )
         if self.fast_exit:

@@ -63,9 +63,10 @@ class ClassInstanceFinder(ast.NodeVisitor):
 
 class NoesisBuilder:
     
-    def __init__(self,doc_string, instances):
+    def __init__(self,doc_string, instances, reasoning_instructions=""):
         self.doc_string = doc_string
         self.instances = instances
+        self.reasoning_instructions = reasoning_instructions
         
     def build(self):
         noesis = textwrap.dedent(
@@ -76,6 +77,8 @@ class NoesisBuilder:
             Produce each requested field directly. Do not repeat prior wording.
             """
         ).strip()
+        if self.reasoning_instructions:
+            noesis += "\n" + self.reasoning_instructions
         
         for instance in self.instances:
             class_name = instance["class"] 
@@ -143,8 +146,8 @@ def _decorate_noema(func, llm=None):
         tree = ast.parse(source_code)
         finder = ClassInstanceFinder(classes_to_find)
         finder.visit(tree)
-        noesis = NoesisBuilder(doc, finder.instances).build()
         subject = current_runtime()
+        noesis = NoesisBuilder(doc, finder.instances, subject.reasoning_instructions()).build()
         subject.llm += "\n"+noesis
         subject.enter_function(func_name, doc, noesis)
         result = None  # Initialisation de 'result'

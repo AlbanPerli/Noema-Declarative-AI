@@ -72,6 +72,7 @@ llm = LLM(
     "../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf",
     context_size=8192,
     n_gpu_layers=-1,
+    reasoning="off",
 )
 
 @Noema(llm)
@@ -84,6 +85,11 @@ def think(task):
 ```
 
 `@Noema("path/to/model.gguf")` remains available as a shorthand.
+
+For reasoning models, `reasoning="off"` is Noema's equivalent to llama.cpp's
+`-rea off`. It asks the model to produce only final values and injects an
+already-closed `<think>` block before generated fields. Use `reasoning="auto"`
+or omit the option to keep the model/template default.
 
 
 

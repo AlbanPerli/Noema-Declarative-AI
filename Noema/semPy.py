@@ -85,6 +85,7 @@ Produce only the code, no example or explanation.
 ```Python
 """
         llm += self.noesis
+        llm += runtime.reasoning_prelude()
         llm += gen(name="response", stop="```", **runtime.generation_kwargs(500))
         function_str = llm["response"]
         runtime.llm = llm

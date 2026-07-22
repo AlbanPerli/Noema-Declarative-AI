@@ -33,6 +33,7 @@ class Free(Generator):
             noesis = self.value + "\n"
         display_var = "#"+self.id.replace("self.", "").upper()+":"
         llm += noesis
+        llm += runtime.reasoning_prelude()
         llm += display_var + " " + gen(name="response", **runtime.generation_kwargs(max_tokens)) + "\n"
         res = llm["response"]
         runtime.llm = llm

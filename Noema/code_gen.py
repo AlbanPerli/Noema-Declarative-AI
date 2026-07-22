@@ -19,6 +19,7 @@ class CodeGenerator(Generator):
         display_var = "#"+self.id.replace("self.", "").upper()+":"
         llm += noesis
         llm += " Produce only the code, no example or explanation." + "\n"  
+        llm += runtime.reasoning_prelude()
         llm += display_var + " " + f" ```{self.__class__.__name__}\n" + gen(
             stop="```",
             name="response",

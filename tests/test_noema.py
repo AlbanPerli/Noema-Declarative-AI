@@ -62,6 +62,9 @@ class TestNoema(unittest.TestCase):
             def generation_kwargs(self, max_tokens=None):
                 return {"max_tokens": max_tokens, "temperature": 0.1}
 
+            def reasoning_prelude(self):
+                return ""
+
             def append_to_chain(self, value):
                 pass
 
@@ -91,6 +94,9 @@ class TestNoema(unittest.TestCase):
             def generation_kwargs(self, max_tokens=None):
                 return {"max_tokens": max_tokens, "temperature": 0.1}
 
+            def reasoning_prelude(self):
+                return ""
+
             def append_to_chain(self, value):
                 pass
 
@@ -110,6 +116,20 @@ class TestNoema(unittest.TestCase):
         self.assertEqual(word.value, "Label")
         self.assertIn("regex", mocked_gen.call_args.kwargs)
         self.assertNotIn("stop", mocked_gen.call_args.kwargs)
+
+    def test_llm_can_disable_reasoning(self):
+        llm = LLM("model.gguf", reasoning="off")
+        self.assertEqual(llm.reasoning, "off")
+
+    def test_subject_normalizes_reasoning_and_builds_disable_prompt(self):
+        from Noema.Subject import Subject
+
+        with patch("Noema.Subject.models.LlamaCpp"):
+            subject = Subject("model-reasoning.gguf", reasoning=False)
+
+        self.assertEqual(subject.reasoning, "off")
+        self.assertIn("Reasoning mode: off", subject.reasoning_instructions())
+        self.assertEqual(subject.reasoning_prelude(), "<think>\n\n</think>\n\n")
 
     def tearDown(self):
         try:
@@ -174,6 +194,13 @@ class TestNoema(unittest.TestCase):
         self.assertNotIn("[INST]", prompt)
         self.assertNotIn("[/INST]", prompt)
 
+    def test_noesis_prompt_can_disable_reasoning(self):
+        from Noema.noesis_wrapper import NoesisBuilder
+
+        prompt = NoesisBuilder("You are helpful.", [], "Reasoning mode: off.").build()
+
+        self.assertIn("Reasoning mode: off.", prompt)
+
     def test_decorator_can_declare_llm_path(self):
         class FakeRuntime:
             def __init__(self):
@@ -186,6 +213,9 @@ class TestNoema(unittest.TestCase):
 
             def exit_function(self, value):
                 self.exited.append(value)
+
+            def reasoning_instructions(self):
+                return ""
 
         fake_runtime = FakeRuntime()
 
@@ -214,6 +244,7 @@ class TestNoema(unittest.TestCase):
                 top_k=40,
                 min_p=None,
                 repetition_penalty=1.25,
+                reasoning="auto",
             )
             self.assertEqual(len(fake_runtime.entered), 1)
             self.assertEqual(fake_runtime.exited, ["ok"])
@@ -230,6 +261,9 @@ class TestNoema(unittest.TestCase):
 
             def exit_function(self, value):
                 self.exited.append(value)
+
+            def reasoning_instructions(self):
+                return ""
 
         fake_runtime = FakeRuntime()
         llm = LLM("model-b.gguf", context_size=1024, verbose=True)
@@ -260,6 +294,7 @@ class TestNoema(unittest.TestCase):
             top_k=40,
             min_p=None,
             repetition_penalty=1.25,
+            reasoning="auto",
         )
         self.assertEqual(len(fake_runtime.entered), 1)
         self.assertEqual(fake_runtime.exited, ["ok"])

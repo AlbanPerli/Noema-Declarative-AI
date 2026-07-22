@@ -10,6 +10,57 @@ def _env_flag(name, default):
     return os.environ.get(name, default) not in {"0", "false", "False"}
 
 
+def _normalize_reasoning(reasoning):
+    if reasoning is None:
+        return "auto"
+    if isinstance(reasoning, bool):
+        return "on" if reasoning else "off"
+    reasoning = str(reasoning).lower()
+    if reasoning not in {"on", "off", "auto"}:
+        raise ValueError("reasoning must be one of: 'on', 'off', 'auto', True, False, or None.")
+    return reasoning
+
+
+def _runtime_config(
+    context_size=512 * 8,
+    verbose=False,
+    write_graph=False,
+    n_gpu_layers=-1,
+    flash_attn=True,
+    enable_monitoring=None,
+    suppress_startup_logs=None,
+    safe_native_cleanup=True,
+    temperature=0.1,
+    top_p=0.8,
+    top_k=40,
+    min_p=None,
+    repetition_penalty=1.25,
+    reasoning="auto",
+    **llama_cpp_kwargs,
+):
+    if enable_monitoring is None:
+        enable_monitoring = _env_flag("NOEMA_ENABLE_MONITORING", "0")
+    if suppress_startup_logs is None:
+        suppress_startup_logs = _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", "0")
+    return {
+        "context_size": context_size,
+        "verbose": verbose,
+        "write_graph": write_graph,
+        "n_gpu_layers": n_gpu_layers,
+        "flash_attn": flash_attn,
+        "enable_monitoring": enable_monitoring,
+        "suppress_startup_logs": suppress_startup_logs,
+        "safe_native_cleanup": safe_native_cleanup,
+        "temperature": temperature,
+        "top_p": top_p,
+        "top_k": top_k,
+        "min_p": min_p,
+        "repetition_penalty": repetition_penalty,
+        "reasoning": _normalize_reasoning(reasoning),
+        "llama_cpp_kwargs": dict(llama_cpp_kwargs),
+    }
+
+
 @contextmanager
 def _suppress_native_startup_logs(enabled):
     if not enabled:
@@ -59,18 +110,37 @@ class Subject(metaclass=SingletonMeta):
         top_k=40,
         min_p=None,
         repetition_penalty=1.25,
+        reasoning="auto",
         **llama_cpp_kwargs,
     ):
         if enable_monitoring is None:
             enable_monitoring = _env_flag("NOEMA_ENABLE_MONITORING", "0")
         if suppress_startup_logs is None:
             suppress_startup_logs = _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", "0")
+        self._config = _runtime_config(
+            context_size=context_size,
+            verbose=verbose,
+            write_graph=write_graph,
+            n_gpu_layers=n_gpu_layers,
+            flash_attn=flash_attn,
+            enable_monitoring=enable_monitoring,
+            suppress_startup_logs=suppress_startup_logs,
+            safe_native_cleanup=safe_native_cleanup,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            min_p=min_p,
+            repetition_penalty=repetition_penalty,
+            reasoning=reasoning,
+            **llama_cpp_kwargs,
+        )
 
         self.verbose = verbose
         self.model_path = str(model_path)
         self.write_graph = write_graph
         self.safe_native_cleanup = safe_native_cleanup
         self.temperature = temperature
+        self.reasoning = self._config["reasoning"]
         sampling_params = {
             "top_p": top_p,
             "top_k": top_k,
@@ -113,10 +183,29 @@ class Subject(metaclass=SingletonMeta):
             kwargs["temperature"] = self.temperature
         return kwargs
 
+    def reasoning_instructions(self):
+        if self.reasoning != "off":
+            return ""
+        return (
+            "Reasoning mode: off. Produce only the requested final values. "
+            "Do not output chain-of-thought, analysis traces, or <think> blocks."
+        )
+
+    def reasoning_prelude(self):
+        if self.reasoning != "off":
+            return ""
+        return "<think>\n\n</think>\n\n"
+
     @classmethod
     def configure_shared(cls, model_path, **kwargs):
+        config = _runtime_config(**kwargs)
         instance = SingletonMeta._instances.get(cls)
-        if instance is not None and instance.model_path == str(model_path) and instance.llm is not None:
+        if (
+            instance is not None
+            and instance.model_path == str(model_path)
+            and instance.llm is not None
+            and instance._config == config
+        ):
             return instance
 
         if instance is not None:
