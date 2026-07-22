@@ -138,6 +138,16 @@ class TestNoema(unittest.TestCase):
         self.assertEqual(len(fake_runtime.entered), 1)
         self.assertEqual(fake_runtime.exited, ["ok"])
 
+    def test_llm_fast_exit_installs_shutdown_hook(self):
+        fake_runtime = type("FakeRuntime", (), {"llm": ""})()
+        llm = LLM("model-c.gguf", fast_exit=True)
+
+        with patch("Noema.llm.Subject.configure_shared", return_value=fake_runtime):
+            with patch("Noema.llm._install_fast_exit_hook") as install_fast_exit_hook:
+                self.assertIs(llm.activate(), fake_runtime)
+
+        install_fast_exit_hook.assert_called_once_with()
+
     def test_semantic_python_letter_count_fallback(self):
         sempy = SemPy("Count the occurrence of letters in a word")
         self.assertEqual(

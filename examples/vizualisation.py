@@ -3,6 +3,7 @@ from Noema import *
 from _config import (
     env_context_size,
     env_enable_monitoring,
+    env_fast_exit,
     env_n_gpu_layers,
     env_suppress_startup_logs,
     env_verbose,
@@ -16,6 +17,7 @@ llm = LLM(
     n_gpu_layers=env_n_gpu_layers(),
     enable_monitoring=env_enable_monitoring(),
     suppress_startup_logs=env_suppress_startup_logs(),
+    fast_exit=env_fast_exit(),
     write_graph=True,
 )
 

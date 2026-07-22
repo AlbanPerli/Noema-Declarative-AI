@@ -55,3 +55,7 @@ def env_enable_monitoring(default="0"):
 
 def env_suppress_startup_logs(default="1"):
     return _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", default)
+
+
+def env_fast_exit(default="1"):
+    return _env_flag("NOEMA_FAST_EXIT", default)
