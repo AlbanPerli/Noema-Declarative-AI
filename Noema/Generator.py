@@ -1,7 +1,17 @@
 from .BaseGenerator import BaseGenerator
 from guidance import gen, select, substring
+from itertools import count
 from .llm import current_runtime
 from varname import varname
+from varname.utils import ImproperUseError
+
+
+_unnamed_generator_counter = count(1)
+
+
+def _unnamed_generator_id(instance):
+    class_name = type(instance).__name__.lower()
+    return f"{class_name}_{next(_unnamed_generator_counter)}"
 
 def noema_generator(cls):
     class Wrapped(cls):
@@ -11,7 +21,10 @@ def noema_generator(cls):
                 self.id = self.var.replace("self.", "")
                 self._value = f"#{self.id.upper()}:"
                 return
-            self.id = varname()
+            try:
+                self.id = varname()
+            except ImproperUseError:
+                self.id = _unnamed_generator_id(self)
             self.id = self.id.replace("self.", "")
             if hasattr(self, 'value') and self.value is not None:
                 self.execute()

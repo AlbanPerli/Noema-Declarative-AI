@@ -366,6 +366,24 @@ class TestNoema(unittest.TestCase):
         printed = mocked_print.call_args.args[0]
         self.assertNotIn("(None)", printed)
 
+    def test_information_can_be_called_without_assignment(self):
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = ""
+                self.verbose = False
+                self.chain = []
+
+            def append_to_chain(self, value):
+                self.chain.append(value)
+
+        fake_runtime = FakeRuntime()
+
+        with patch("Noema.information.current_runtime", return_value=fake_runtime):
+            Information("hello")
+
+        self.assertEqual(fake_runtime.chain[0]["value"], "hello")
+        self.assertIn("#INFORMATION_", fake_runtime.llm)
+
     def test_listof_parses_bulleted_and_numbered_lines(self):
         response = "1. Identify the word.\n- Count each letter.\n* Return the counts.\n"
         self.assertEqual(
