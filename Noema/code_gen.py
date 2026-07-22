@@ -8,7 +8,6 @@ class CodeGenerator(Generator):
     return_type = str
 
     def execute(self, max_tokens=500):
-        print("Code Gen Value: ", self.value)
         runtime = current_runtime()
         llm = runtime.llm
         noesis = ""

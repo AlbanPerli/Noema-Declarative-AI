@@ -16,7 +16,9 @@ class SemPy(Generator):
         
     def run(self, *args, **kwargs):
         local_context = {}
-        print("Value: ", self.value)
+        runtime = current_runtime()
+        if runtime.verbose:
+            print("Value: ", self.value)
         tree = ast.parse(self.value)
 
         func_name = None
@@ -26,8 +28,9 @@ class SemPy(Generator):
                 
         exec(self.value, local_context)
         
-        print("Function name: ", func_name)
-        print("Args: ", args)
+        if runtime.verbose:
+            print("Function name: ", func_name)
+            print("Args: ", args)
         result = local_context[func_name](*args)
         return result
 
@@ -92,7 +95,8 @@ Produce only the code, no example or explanation.
         self.noema = function_str
         local_context = {}
         function_str = self._extract_python(function_str)
-        print(function_str)
+        if runtime.verbose:
+            print(function_str)
         exec(function_str, local_context)
         self.value = local_context["noema_func"](*args, **kwargs)
         runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})

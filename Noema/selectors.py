@@ -7,6 +7,8 @@ class Select(Generator):
     hint = "Response format: select the best option"
     
     def execute(self):
+        if not self.options:
+            raise ValueError("Select requires at least one option.")
         llm = current_runtime().llm
         noesis = ""
         if self.hint != None:
@@ -38,8 +40,9 @@ class SelectOrNone(Generator):
     hint = "Response format: select the best option or 'None'"
     
     def execute(self):
-        if "None" not in self.options:
-            self.options.append("None")
+        options = list(self.options or [])
+        if "None" not in options:
+            options.append("None")
         llm = current_runtime().llm
         noesis = ""
         if self.hint != None:
@@ -55,7 +58,7 @@ class SelectOrNone(Generator):
             var = self.id.replace("self.", "").upper()
         display_var = "#"+f"{var}:"
         llm += noesis 
-        llm += display_var + " " + select(self.options,name='response') + "\n"
+        llm += display_var + " " + select(options,name='response') + "\n"
         res = llm["response"]
         current_runtime().llm = llm
         self.noema = self.value
@@ -66,5 +69,5 @@ class SelectOrNone(Generator):
         self.noesis = noesis
         current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
         if current_runtime().verbose:
-            print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {self.options})'}\033[0m)")
+            print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {options})'}\033[0m)")
         

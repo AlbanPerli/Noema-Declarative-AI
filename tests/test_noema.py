@@ -19,6 +19,8 @@ if HAS_RUNTIME_DEPS:
         Noema,
         LLM,
         Paragraph,
+        Select,
+        SelectOrNone,
         Sentence,
         SemPy,
         Word,
@@ -173,6 +175,83 @@ class TestNoema(unittest.TestCase):
         self.assertEqual(info.noema, "hello")
         printed = mocked_print.call_args.args[0]
         self.assertNotIn("(None)", printed)
+
+    def test_information_can_be_called_without_assignment(self):
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = ""
+                self.verbose = False
+                self.chain = []
+
+            def append_to_chain(self, value):
+                self.chain.append(value)
+
+        fake_runtime = FakeRuntime()
+
+        with patch("Noema.information.current_runtime", return_value=fake_runtime):
+            Information("hello")
+
+        self.assertEqual(fake_runtime.chain[0]["value"], "hello")
+        self.assertIn("#INFORMATION_", fake_runtime.llm)
+
+    def test_select_rejects_empty_options_before_runtime_lookup(self):
+        with self.assertRaisesRegex(ValueError, "at least one option"):
+            Select("Choose", options=[])
+
+    def test_select_or_none_does_not_mutate_options(self):
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+                self.chain = []
+
+            def append_to_chain(self, value):
+                self.chain.append(value)
+
+        class FakeModel:
+            def __add__(self, value):
+                return self
+
+            def __getitem__(self, name):
+                return "None"
+
+        options = ["alpha"]
+
+        with patch("Noema.selectors.current_runtime", return_value=FakeRuntime()):
+            with patch("Noema.selectors.select", return_value="selected"):
+                choice = SelectOrNone("Choose optionally", options=options)
+
+        self.assertIsNone(choice.value)
+        self.assertEqual(options, ["alpha"])
+
+    def test_code_generator_does_not_print_outside_verbose_mode(self):
+        from Noema.code_gen import CodeGenerator
+
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens}
+
+            def reasoning_prelude(self):
+                return ""
+
+        class FakeModel:
+            def __add__(self, value):
+                return self
+
+            def __getitem__(self, name):
+                return "print('hello')"
+
+        with patch("Noema.code_gen.current_runtime", return_value=FakeRuntime()):
+            with patch("Noema.code_gen.gen", return_value="generated"):
+                with patch("builtins.print") as mocked_print:
+                    code = CodeGenerator("Write hello")
+
+        self.assertEqual(code.value, "print('hello')")
+        mocked_print.assert_not_called()
 
     def test_listof_parses_bulleted_and_numbered_lines(self):
         response = "1. Identify the word.\n- Count each letter.\n* Return the counts.\n"
