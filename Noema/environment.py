@@ -148,6 +148,8 @@ class NoemaEnvironment:
         "\n***",
         "\n*Self-Correction",
         "\nSelf-Correction",
+        "\nFinal Response Generation",
+        "\nFinal response generation",
         "\nThe chosen output format",
         "\n#NOEMA_ENV",
     )
@@ -472,11 +474,13 @@ def _clean_final_answer(value):
 
     text = _remove_think_sections(text).strip()
     text = _strip_answer_label(text)
+    text = _drop_meta_preamble(text)
 
     cut_markers = (
         "\n***",
         "\n*self-correction",
         "\nself-correction",
+        "\nfinal response generation",
         "\nthe chosen output format",
         "\n#noema_env",
     )
@@ -486,6 +490,40 @@ def _clean_final_answer(value):
         text = text[:min(cut_indexes)]
 
     return text.strip()
+
+
+def _drop_meta_preamble(text):
+    paragraphs = [paragraph.strip() for paragraph in text.split("\n\n")]
+    dropped = False
+    while len(paragraphs) > 1 and _is_meta_preamble(paragraphs[0]):
+        paragraphs.pop(0)
+        dropped = True
+    if len(paragraphs) != 1:
+        return "\n\n".join(paragraph for paragraph in paragraphs if paragraph)
+    if dropped:
+        return paragraphs[0]
+    if _is_meta_preamble(paragraphs[0]):
+        return ""
+    return text
+
+
+def _is_meta_preamble(text):
+    normalized = " ".join(text.strip().lower().split())
+    if not normalized:
+        return False
+    prefixes = (
+        "final response generation",
+        "synthesis of actions taken",
+        "self-correction",
+        "refinement",
+        "reasoning",
+        "analysis",
+        "the request requires",
+        "since all actions",
+    )
+    if normalized.startswith(prefixes):
+        return True
+    return False
 
 
 def _remove_think_sections(text):

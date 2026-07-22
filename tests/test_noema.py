@@ -414,6 +414,28 @@ class TestNoema(unittest.TestCase):
 
         self.assertEqual(answer, "This LLM received positive feedback.")
 
+    def test_environment_cleans_final_response_generation_preamble(self):
+        class CommentWorkspace(NoemaEnvironment):
+            pass
+
+        raw_answer = (
+            "Final Response Generation (Self-Correction/Refinement based on instructions): "
+            "The request requires storing the comment, classifying it, and providing a short synthesis. "
+            "Since all actions have been executed successfully in the environment steps, I must now generate "
+            "the required summary response.\n\n"
+            "The stored comment \"This llm is very good!\" expresses clear positive sentiment."
+        )
+
+        answer = CommentWorkspace()(
+            "Answer cleanly.",
+            planner=lambda environment, prompt, run: {"answer": raw_answer},
+        )
+
+        self.assertEqual(
+            answer,
+            "The stored comment \"This llm is very good!\" expresses clear positive sentiment.",
+        )
+
     def test_environment_llm_final_generation_uses_strict_final_mode(self):
         class FakeModel:
             def __init__(self):
