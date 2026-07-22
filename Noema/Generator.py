@@ -26,6 +26,7 @@ class Generator(BaseGenerator):
     return_type = None
     hint = None
     stops = []
+    max_tokens = 64
     
     def __init__(self, value=None, idx:int = None, var: str = None, options: list = None):
         super().__init__()
@@ -50,20 +51,23 @@ class Generator(BaseGenerator):
         display_var = "#"+f"{var}:"
         llm += noesis 
         
-        if self.regex == "":
-            llm += display_var + " " + gen(name="response") + "\n"
-        else:
-            llm += display_var + " " + gen(regex=self.regex, stop=self.stops, name="response") + "\n"
+        runtime = current_runtime()
+        generation_kwargs = runtime.generation_kwargs(self.max_tokens)
+        if self.regex:
+            generation_kwargs["regex"] = self.regex
+        if self.stops:
+            generation_kwargs["stop"] = self.stops
+        llm += display_var + " " + gen(name="response", **generation_kwargs) + "\n"
         res = llm["response"]
-        current_runtime().llm = llm
+        runtime.llm = llm
         self.noema = self.value
         if self.return_type == bool:
             self.value = True if res == "True" else False
         else:
             self.value = self.return_type(res)
         self.noesis = noesis
-        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if current_runtime().verbose:
+        runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if runtime.verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")    
 
 

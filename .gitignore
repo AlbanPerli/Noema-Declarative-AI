@@ -68,6 +68,7 @@ ipython_config.py
 
 # Virtual environments
 .venv
+.venv-metal
 env/
 ENV/
 

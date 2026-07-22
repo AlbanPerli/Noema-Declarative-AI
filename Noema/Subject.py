@@ -1,5 +1,4 @@
 import json
-import gc
 import os
 import textwrap
 import warnings
@@ -51,8 +50,15 @@ class Subject(metaclass=SingletonMeta):
         verbose=False,
         write_graph=False,
         n_gpu_layers=-1,
+        flash_attn=True,
         enable_monitoring=None,
         suppress_startup_logs=None,
+        safe_native_cleanup=True,
+        temperature=0.1,
+        top_p=0.8,
+        top_k=40,
+        min_p=None,
+        repetition_penalty=1.25,
         **llama_cpp_kwargs,
     ):
         if enable_monitoring is None:
@@ -63,17 +69,49 @@ class Subject(metaclass=SingletonMeta):
         self.verbose = verbose
         self.model_path = str(model_path)
         self.write_graph = write_graph
-        with _suppress_native_startup_logs(suppress_startup_logs):
-            self.llm = models.LlamaCpp(
-                self.model_path,
-                n_gpu_layers=n_gpu_layers,
-                n_ctx=context_size,
-                echo=False,
-                enable_monitoring=enable_monitoring,
-                **llama_cpp_kwargs,
-            )
+        self.safe_native_cleanup = safe_native_cleanup
+        self.temperature = temperature
+        sampling_params = {
+            "top_p": top_p,
+            "top_k": top_k,
+            "min_p": min_p,
+            "repetition_penalty": repetition_penalty,
+        }
+        sampling_params = {key: value for key, value in sampling_params.items() if value is not None}
+        try:
+            with _suppress_native_startup_logs(suppress_startup_logs):
+                self.llm = models.LlamaCpp(
+                    self.model_path,
+                    n_gpu_layers=n_gpu_layers,
+                    n_ctx=context_size,
+                    flash_attn=flash_attn,
+                    echo=False,
+                    enable_monitoring=enable_monitoring,
+                    sampling_params=sampling_params,
+                    **llama_cpp_kwargs,
+                )
+        except ValueError as error:
+            if "Failed to create llama_context" not in str(error):
+                raise
+            raise RuntimeError(
+                "Failed to initialize the LLM runtime with llama.cpp.\n"
+                f"Model: {self.model_path}\n"
+                f"context_size: {context_size}\n"
+                f"n_gpu_layers: {n_gpu_layers}\n"
+                f"flash_attn: {flash_attn}\n"
+                "Metal/GPU remains enabled when n_gpu_layers is not 0. "
+                "Run once with NOEMA_SUPPRESS_STARTUP_LOGS=0 to see the native llama.cpp diagnostics."
+            ) from error
         self.structure = []
         self.stack = [self.structure]
+
+    def generation_kwargs(self, max_tokens=None):
+        kwargs = {}
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if self.temperature is not None:
+            kwargs["temperature"] = self.temperature
+        return kwargs
 
     @classmethod
     def configure_shared(cls, model_path, **kwargs):
@@ -290,6 +328,10 @@ class Subject(metaclass=SingletonMeta):
         if llm is None:
             return
 
+        if self.safe_native_cleanup:
+            self.llm = None
+            return
+
         interpreter = getattr(llm, "_interpreter", None)
         engine = getattr(interpreter, "engine", None)
         context = getattr(engine, "_context", None)
@@ -305,7 +347,6 @@ class Subject(metaclass=SingletonMeta):
         if engine is not None:
             engine.model_obj = None
             engine._context = None
-        gc.collect()
 
     @classmethod
     def close_shared(cls):

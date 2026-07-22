@@ -3,24 +3,29 @@ from .llm import current_runtime
 from guidance import gen
 
 class Sentence(Generator):
-    regex = r"[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-…_\$]*[.!?]$"
-    hint = "Response format: a sentence"
+    regex = None
+    hint = "Response format: one sentence. Stop after the final punctuation"
     return_type = str
-    stops = ["\n"]
+    stops = ["\n", "#"]
+    max_tokens = 36
     
 class Paragraph(Generator):
-    regex = r"[A-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇ]?[a-zA-ZÀÂÄÉÈÊËÎÏÔŒÙÛÜÇàâäéèêëîïôœùûüç0-9\s,;:<>\{\}/=\-\+\%\*`'\"\\(\\)\-\.…\\n_\$]*[.!?]$"
-    hint = "Response format: a paragraph"
+    regex = None
+    hint = "Response format: one concise paragraph. Do not repeat phrases"
     return_type = str
-    stops = ["\n"]
+    stops = ["\n", "#"]
+    max_tokens = 120
     
 class Free(Generator):
     regex = ""
     hint = "Response format: text"
     return_type = str
+    max_tokens = 500
     
-    def execute(self, max_tokens=500):
-        llm = current_runtime().llm
+    def execute(self, max_tokens=None):
+        max_tokens = max_tokens or self.max_tokens
+        runtime = current_runtime()
+        llm = runtime.llm
         noesis = ""
         if self.hint != None:
             noesis = self.value + f"({self.hint})" + "\n"
@@ -28,12 +33,12 @@ class Free(Generator):
             noesis = self.value + "\n"
         display_var = "#"+self.id.replace("self.", "").upper()+":"
         llm += noesis
-        llm += display_var + " " + gen(name="response",max_tokens=max_tokens) + "\n"
+        llm += display_var + " " + gen(name="response", **runtime.generation_kwargs(max_tokens)) + "\n"
         res = llm["response"]
-        current_runtime().llm = llm
+        runtime.llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
-        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if current_runtime().verbose:
+        runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if runtime.verbose:
             print(f"{self.id.replace('self.', '')} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")

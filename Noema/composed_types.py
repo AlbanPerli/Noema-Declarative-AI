@@ -19,7 +19,8 @@ class ListOf(BaseGenerator):
         self.idx = idx
         
     def execute(self, max_items=None, item_max_tokens=48):
-        llm = current_runtime().llm
+        runtime = current_runtime()
+        llm = runtime.llm
         noesis = ""
         local_hint = ""
         if self.hint != None:
@@ -44,8 +45,8 @@ class ListOf(BaseGenerator):
             try:
                 llm += f"{i + 1}. " + gen(
                     name=response_name,
-                    max_tokens=item_max_tokens,
                     stop="\n",
+                    **runtime.generation_kwargs(item_max_tokens),
                 ) + "\n"
             except Exception:
                 if res:
@@ -57,12 +58,12 @@ class ListOf(BaseGenerator):
                 break
             res.append(parsed[0])
 
-        current_runtime().llm = llm
+        runtime.llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
-        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if current_runtime().verbose:
+        runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if runtime.verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({local_hint})'}\033[0m)")    
 
     @staticmethod

@@ -10,17 +10,7 @@ from _config import (
     model_path,
 )
 
-llm = LLM(
-    model_path("granite-3.1-3b-a800m-instruct-Q4_K_M.gguf"),
-    verbose=env_verbose(),
-    context_size=env_context_size(),
-    n_gpu_layers=env_n_gpu_layers(),
-    enable_monitoring=env_enable_monitoring(),
-    suppress_startup_logs=env_suppress_startup_logs(),
-    fast_exit=env_fast_exit(),
-    write_graph=True,
-)
-
+llm = LLM("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf")
 
 @Noema(llm)
 def analysis_evaluation(analysis):

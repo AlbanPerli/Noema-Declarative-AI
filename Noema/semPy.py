@@ -59,8 +59,9 @@ class SemPy(Generator):
             return self
 
         formated_params = self.format_parameters(args, kwargs)
-        llm = current_runtime().llm
-        self.noesis = f"""[INST]Generate a Python function to perform the following task:
+        runtime = current_runtime()
+        llm = runtime.llm
+        self.noesis = f"""Generate a Python function to perform the following task:
 {self.instruction}
 
 Using the following form: 
@@ -80,22 +81,21 @@ def noema_func({formated_params}):
 
 Always use the function name `noema_func` as the last function in your code to return the result to the Noema engine.
 Produce only the code, no example or explanation.
-[/INST]
 
 ```Python
 """
         llm += self.noesis
-        llm += gen(name="response", max_tokens=500, stop="```")
+        llm += gen(name="response", stop="```", **runtime.generation_kwargs(500))
         function_str = llm["response"]
-        current_runtime().llm = llm
+        runtime.llm = llm
         self.noema = function_str
         local_context = {}
         function_str = self._extract_python(function_str)
         print(function_str)
         exec(function_str, local_context)
         self.value = local_context["noema_func"](*args, **kwargs)
-        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if current_runtime().verbose:
+        runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if runtime.verbose:
             print(f"\033[93m{self.noema}\n Returns:\n{self.value}\nFor parametters:{formated_params}\033[0m\n(\033[94m{self.noesis + f'({self.hint})'}\033[0m)")
         return self
 

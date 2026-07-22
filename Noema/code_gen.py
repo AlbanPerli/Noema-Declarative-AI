@@ -9,7 +9,8 @@ class CodeGenerator(Generator):
 
     def execute(self, max_tokens=500):
         print("Code Gen Value: ", self.value)
-        llm = current_runtime().llm
+        runtime = current_runtime()
+        llm = runtime.llm
         noesis = ""
         if self.hint != None:
             noesis = self.value + f"({self.hint})" + "\n"
@@ -18,11 +19,15 @@ class CodeGenerator(Generator):
         display_var = "#"+self.id.replace("self.", "").upper()+":"
         llm += noesis
         llm += " Produce only the code, no example or explanation." + "\n"  
-        llm += display_var + " " + f" ```{self.__class__.__name__}\n" + gen(stop="```",name="response") + "\n"
+        llm += display_var + " " + f" ```{self.__class__.__name__}\n" + gen(
+            stop="```",
+            name="response",
+            **runtime.generation_kwargs(max_tokens),
+        ) + "\n"
         res = llm["response"]
-        current_runtime().llm = llm
+        runtime.llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
-        if current_runtime().verbose:
+        if runtime.verbose:
             print(f"{self.id.replace('self.', '')} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")

@@ -41,7 +41,7 @@ def env_verbose(default="1"):
     return _env_flag("NOEMA_VERBOSE", default)
 
 
-def env_context_size(default="4096"):
+def env_context_size(default="8192"):
     return int(os.environ.get("NOEMA_CONTEXT_SIZE", default))
 
 

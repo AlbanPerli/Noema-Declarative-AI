@@ -10,16 +10,7 @@ from _config import (
     model_path,
 )
 
-
-llm = LLM(
-    model_path("Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf"),
-    verbose=env_verbose(),
-    context_size=env_context_size(),
-    n_gpu_layers=env_n_gpu_layers(),
-    enable_monitoring=env_enable_monitoring(),
-    suppress_startup_logs=env_suppress_startup_logs(),
-    fast_exit=env_fast_exit(),
-)
+llm = LLM("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf")
 
 # Create a way of thinking
 class SimpleWayOfThinking:

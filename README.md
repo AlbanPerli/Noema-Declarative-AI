@@ -35,8 +35,20 @@ Noema API import correctly. It does not load a `.gguf` model.
 
 ## Run examples from VS Code
 
-1. Select a Python interpreter in VS Code.
-2. Run the task `Noema: install package`.
+For recent GGUF models on macOS Metal, prefer a non-Conda runtime:
+
+```bash
+bash scripts/setup_metal_runtime.sh
+```
+
+This creates `.venv-metal` with Homebrew Python 3.13, `guidance`, and
+`llama-cpp-python` compiled with Metal. Example bootstrap code prefers
+`.venv-metal` when it exists. Set `NOEMA_PYTHON=/path/to/python` to override
+the runtime explicitly.
+
+1. Select `.venv-metal/bin/python` as the Python interpreter in VS Code.
+2. Run the task `Noema: install package` only if you are not using the setup
+   script above.
 3. Put your `.gguf` models in `../Models`, or set `NOEMA_MODEL_PATH` /
    `NOEMA_MODEL_DIR` in your local environment.
 4. Open the Run and Debug panel and choose one of the `Noema: ...` launch
@@ -58,7 +70,7 @@ from Noema import *
 
 llm = LLM(
     "../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf",
-    context_size=4096,
+    context_size=8192,
     n_gpu_layers=-1,
 )
 
@@ -117,12 +129,12 @@ You are a simple thinker. You have a task to perform.
 Always looking for the best way to perform it.        
 
 #TASK : f'{self.task}'
-#REFLEXION : Providing a reflection about the task. (Response format: a sentence)
-#CONSEQUENCE : Providing the consequence of the reflection. (Response format: a sentence)
-#EVALUATE : Evaluating the consequence. (Response format: a sentence)
-#POINT_OF_VIEW : f'Providing a point of view about the task different than {povs}' (Response format: a sentence)
+#REFLEXION : Providing a reflection about the task. (Response format: one sentence. Stop after the final punctuation)
+#CONSEQUENCE : Providing the consequence of the reflection. (Response format: one sentence. Stop after the final punctuation)
+#EVALUATE : Evaluating the consequence. (Response format: one sentence. Stop after the final punctuation)
+#POINT_OF_VIEW : f'Providing a point of view about the task different than {povs}' (Response format: one sentence. Stop after the final punctuation)
 #IMPORTANT : I need to be more creative!
-#CONCLUSION : Providing a conclusion which is a synthesis of the previous steps. (Response format: a paragraph)
+#CONCLUSION : Providing a conclusion which is a synthesis of the previous steps. (Response format: one concise paragraph. Do not repeat phrases)
 [/INST]
 
 #TASK: How to write a good iOS application?
@@ -263,9 +275,9 @@ You always produce a deep analysis of the comment.
 
 #COMMENT_TO_ANALYSE : f'{comment}'
 
-#ANALYSIS : f'Analysing the comment as a {specialist}' (Response format: a sentence)
+#ANALYSIS : f'Analysing the comment as a {specialist}' (Response format: one sentence. Stop after the final punctuation)
 
-#SYNTHESIS : Providing a synthesis of the analysis. (Response format: a paragraph)
+#SYNTHESIS : Providing a synthesis of the analysis. (Response format: one concise paragraph. Do not repeat phrases)
 
 [/INST]
 

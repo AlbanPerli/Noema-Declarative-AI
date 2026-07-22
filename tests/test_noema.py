@@ -23,6 +23,7 @@ if HAS_RUNTIME_DEPS:
         SemPy,
         Word,
     )
+    from Noema.information import Information
     from Noema.llm import close_current_runtime, current_runtime
 
 
@@ -36,9 +37,89 @@ class TestNoema(unittest.TestCase):
         self.assertIs(Sentence.return_type, str)
         self.assertIs(Paragraph.return_type, str)
 
+    def test_llm_defaults_leave_room_for_nested_examples(self):
+        llm = LLM("model.gguf")
+        self.assertEqual(llm.context_size, 8192)
+        self.assertTrue(llm.flash_attn)
+        self.assertFalse(llm.enable_monitoring)
+        self.assertTrue(llm.safe_native_cleanup)
+
+    def test_text_generators_have_token_limits(self):
+        self.assertEqual(Sentence.max_tokens, 36)
+        self.assertEqual(Paragraph.max_tokens, 120)
+        self.assertLess(Word.max_tokens, Sentence.max_tokens)
+        self.assertIsNone(Sentence.regex)
+        self.assertIsNone(Paragraph.regex)
+        self.assertIn("\n", Sentence.stops)
+        self.assertIn("\n", Paragraph.stops)
+
+    def test_text_generation_uses_stop_without_natural_language_regex(self):
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens, "temperature": 0.1}
+
+            def append_to_chain(self, value):
+                pass
+
+        class FakeModel:
+            def __add__(self, value):
+                return self
+
+            def __getitem__(self, name):
+                return "A direct sentence."
+
+        fake_runtime = FakeRuntime()
+
+        with patch("Noema.Generator.current_runtime", return_value=fake_runtime):
+            with patch("Noema.Generator.gen", return_value="A direct sentence.") as mocked_gen:
+                sentence = Sentence("Analyse the comment")
+
+        self.assertEqual(sentence.value, "A direct sentence.")
+        self.assertNotIn("regex", mocked_gen.call_args.kwargs)
+        self.assertEqual(mocked_gen.call_args.kwargs["stop"], ["\n", "#"])
+
+    def test_structured_generation_does_not_pass_empty_stop_list(self):
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens, "temperature": 0.1}
+
+            def append_to_chain(self, value):
+                pass
+
+        class FakeModel:
+            def __add__(self, value):
+                return self
+
+            def __getitem__(self, name):
+                return "Label"
+
+        fake_runtime = FakeRuntime()
+
+        with patch("Noema.Generator.current_runtime", return_value=fake_runtime):
+            with patch("Noema.Generator.gen", return_value="Label") as mocked_gen:
+                word = Word("Choose a label")
+
+        self.assertEqual(word.value, "Label")
+        self.assertIn("regex", mocked_gen.call_args.kwargs)
+        self.assertNotIn("stop", mocked_gen.call_args.kwargs)
+
     def tearDown(self):
         try:
             close_current_runtime()
+        except Exception:
+            pass
+        try:
+            from Noema.Subject import Subject
+
+            Subject.close_shared()
         except Exception:
             pass
 
@@ -49,6 +130,24 @@ class TestNoema(unittest.TestCase):
     def test_generators_can_reference_existing_variables(self):
         reference = Sentence(var="existing_step")
         self.assertEqual(str(reference), "#EXISTING_STEP:")
+
+    def test_information_verbose_omits_missing_hint(self):
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = ""
+                self.verbose = True
+                self.chain = []
+
+            def append_to_chain(self, value):
+                self.chain.append(value)
+
+        with patch("Noema.information.current_runtime", return_value=FakeRuntime()):
+            with patch("builtins.print") as mocked_print:
+                info = Information("hello")
+
+        self.assertEqual(info.noema, "hello")
+        printed = mocked_print.call_args.args[0]
+        self.assertNotIn("(None)", printed)
 
     def test_listof_parses_bulleted_and_numbered_lines(self):
         response = "1. Identify the word.\n- Count each letter.\n* Return the counts.\n"
@@ -66,6 +165,15 @@ class TestNoema(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "docstring"):
             wrapped()
 
+    def test_noesis_prompt_uses_neutral_instruction_format(self):
+        from Noema.noesis_wrapper import NoesisBuilder
+
+        prompt = NoesisBuilder("You are helpful.", []).build()
+
+        self.assertIn("NOEMA INSTRUCTIONS:", prompt)
+        self.assertNotIn("[INST]", prompt)
+        self.assertNotIn("[/INST]", prompt)
+
     def test_decorator_can_declare_llm_path(self):
         class FakeRuntime:
             def __init__(self):
@@ -82,21 +190,30 @@ class TestNoema(unittest.TestCase):
         fake_runtime = FakeRuntime()
 
         with patch("Noema.llm.Subject.configure_shared", return_value=fake_runtime) as configure_shared:
+            with patch("Noema.llm._install_fast_exit_exception_hook"):
+                with patch("Noema.llm._install_fast_exit_shutdown_hook"):
 
-            @Noema("model-a.gguf", context_size=2048)
-            def declared_model_task():
-                """Do the task with the declared model."""
-                return "ok"
+                    @Noema("model-a.gguf", context_size=2048)
+                    def declared_model_task():
+                        """Do the task with the declared model."""
+                        return "ok"
 
-            self.assertEqual(declared_model_task(), "ok")
+                    self.assertEqual(declared_model_task(), "ok")
             configure_shared.assert_called_once_with(
                 "model-a.gguf",
                 context_size=2048,
-                verbose=False,
+                verbose=True,
                 write_graph=False,
                 n_gpu_layers=-1,
-                enable_monitoring=None,
-                suppress_startup_logs=None,
+                flash_attn=True,
+                enable_monitoring=False,
+                suppress_startup_logs=True,
+                safe_native_cleanup=True,
+                temperature=0.1,
+                top_p=0.8,
+                top_k=40,
+                min_p=None,
+                repetition_penalty=1.25,
             )
             self.assertEqual(len(fake_runtime.entered), 1)
             self.assertEqual(fake_runtime.exited, ["ok"])
@@ -118,13 +235,15 @@ class TestNoema(unittest.TestCase):
         llm = LLM("model-b.gguf", context_size=1024, verbose=True)
 
         with patch("Noema.llm.Subject.configure_shared", return_value=fake_runtime) as configure_shared:
+            with patch("Noema.llm._install_fast_exit_exception_hook"):
+                with patch("Noema.llm._install_fast_exit_shutdown_hook"):
 
-            @Noema(llm)
-            def declared_llm_task():
-                """Do the task with the declared LLM."""
-                return "ok"
+                    @Noema(llm)
+                    def declared_llm_task():
+                        """Do the task with the declared LLM."""
+                        return "ok"
 
-            self.assertEqual(declared_llm_task(), "ok")
+                    self.assertEqual(declared_llm_task(), "ok")
 
         configure_shared.assert_called_once_with(
             "model-b.gguf",
@@ -132,21 +251,115 @@ class TestNoema(unittest.TestCase):
             verbose=True,
             write_graph=False,
             n_gpu_layers=-1,
-            enable_monitoring=None,
-            suppress_startup_logs=None,
+            flash_attn=True,
+            enable_monitoring=False,
+            suppress_startup_logs=True,
+            safe_native_cleanup=True,
+            temperature=0.1,
+            top_p=0.8,
+            top_k=40,
+            min_p=None,
+            repetition_penalty=1.25,
         )
         self.assertEqual(len(fake_runtime.entered), 1)
         self.assertEqual(fake_runtime.exited, ["ok"])
 
-    def test_llm_fast_exit_installs_shutdown_hook(self):
+    def test_llm_fast_exit_installs_exception_hook_before_runtime_and_shutdown_hook_after(self):
         fake_runtime = type("FakeRuntime", (), {"llm": ""})()
         llm = LLM("model-c.gguf", fast_exit=True)
+        calls = []
+
+        def configure_shared(*args, **kwargs):
+            calls.append("runtime")
+            return fake_runtime
+
+        def install_exception_hook():
+            calls.append("exception")
+
+        def install_shutdown_hook():
+            calls.append("shutdown")
+
+        with patch("Noema.llm.Subject.configure_shared", side_effect=configure_shared):
+            with patch("Noema.llm._install_fast_exit_exception_hook", side_effect=install_exception_hook):
+                with patch("Noema.llm._install_fast_exit_shutdown_hook", side_effect=install_shutdown_hook):
+                    self.assertIs(llm.activate(), fake_runtime)
+
+        self.assertEqual(calls, ["exception", "runtime", "shutdown"])
+
+    def test_llm_fast_exit_does_not_install_shutdown_hook_when_runtime_fails(self):
+        llm = LLM("model-e.gguf", fast_exit=True)
+
+        with patch("Noema.llm.Subject.configure_shared", side_effect=RuntimeError("failed")):
+            with patch("Noema.llm._install_fast_exit_exception_hook") as install_exception_hook:
+                with patch("Noema.llm._install_fast_exit_shutdown_hook") as install_shutdown_hook:
+                    with self.assertRaisesRegex(RuntimeError, "failed"):
+                        llm.activate()
+
+        install_exception_hook.assert_called_once_with()
+        install_shutdown_hook.assert_not_called()
+
+    def test_llm_fast_exit_can_be_disabled(self):
+        fake_runtime = type("FakeRuntime", (), {"llm": ""})()
+        llm = LLM("model-f.gguf", fast_exit=False)
 
         with patch("Noema.llm.Subject.configure_shared", return_value=fake_runtime):
-            with patch("Noema.llm._install_fast_exit_hook") as install_fast_exit_hook:
-                self.assertIs(llm.activate(), fake_runtime)
+            with patch("Noema.llm._install_fast_exit_exception_hook") as install_exception_hook:
+                with patch("Noema.llm._install_fast_exit_shutdown_hook") as install_shutdown_hook:
+                    self.assertIs(llm.activate(), fake_runtime)
 
-        install_fast_exit_hook.assert_called_once_with()
+        install_exception_hook.assert_not_called()
+        install_shutdown_hook.assert_not_called()
+
+    def test_subject_initialization_error_mentions_llama_cpp_context(self):
+        from Noema.Subject import Subject
+
+        with patch("Noema.Subject.models.LlamaCpp", side_effect=ValueError("Failed to create llama_context")):
+            with self.assertRaisesRegex(RuntimeError, "flash_attn: True"):
+                Subject("model-d.gguf", n_gpu_layers=-1)
+
+    def test_subject_passes_flash_attention_to_llama_cpp(self):
+        from Noema.Subject import Subject
+
+        with patch("Noema.Subject.models.LlamaCpp") as llama_cpp:
+            Subject("model-g.gguf", flash_attn=False)
+
+        self.assertFalse(llama_cpp.call_args.kwargs["flash_attn"])
+
+    def test_subject_passes_sampling_params_to_guidance(self):
+        from Noema.Subject import Subject
+
+        with patch("Noema.Subject.models.LlamaCpp") as llama_cpp:
+            subject = Subject(
+                "model-i.gguf",
+                temperature=0.1,
+                top_p=0.75,
+                top_k=20,
+                repetition_penalty=1.25,
+            )
+
+        self.assertEqual(subject.generation_kwargs(12), {"max_tokens": 12, "temperature": 0.1})
+        self.assertEqual(
+            llama_cpp.call_args.kwargs["sampling_params"],
+            {"top_p": 0.75, "top_k": 20, "repetition_penalty": 1.25},
+        )
+
+    def test_subject_close_skips_native_cleanup_by_default(self):
+        from Noema.Subject import Subject
+
+        with patch("Noema.Subject.models.LlamaCpp") as llama_cpp:
+            subject = Subject("model-h.gguf")
+
+        subject.close()
+
+        llama_cpp.return_value.close.assert_not_called()
+        self.assertIsNone(subject.llm)
+
+    def test_comment_classifier_keeps_modern_model_defaults(self):
+        with open("examples/comment_classifier.py", encoding="utf-8") as example:
+            content = example.read()
+
+        self.assertNotIn("flash_attn=False", content)
+        self.assertNotIn("enable_monitoring=True", content)
 
     def test_semantic_python_letter_count_fallback(self):
         sempy = SemPy("Count the occurrence of letters in a word")

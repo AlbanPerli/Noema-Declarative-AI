@@ -68,7 +68,14 @@ class NoesisBuilder:
         self.instances = instances
         
     def build(self):
-        noesis = f"[INST]{self.doc_string}\n"
+        noesis = textwrap.dedent(
+            f"""
+            NOEMA INSTRUCTIONS:
+            {self.doc_string.strip()}
+
+            Produce each requested field directly. Do not repeat prior wording.
+            """
+        ).strip()
         
         for instance in self.instances:
             class_name = instance["class"] 
@@ -93,7 +100,7 @@ class NoesisBuilder:
                         if instance_class.hint != None:
                             noesis += " (" + hint + ")"
 
-        return noesis+ "\n[/INST]\n\n"
+        return noesis + "\n\n"
 
 def _activate_llm(llm):
     if isinstance(llm, LLM):
