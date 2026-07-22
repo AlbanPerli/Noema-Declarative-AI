@@ -1,7 +1,16 @@
 from .BaseGenerator import BaseGenerator
-from guidance import gen, select, substring
-from .llm import current_runtime
+from itertools import count
+from .generation import execute_generation
 from varname import varname
+from varname.utils import ImproperUseError
+
+
+_unnamed_generator_counter = count(1)
+
+
+def _unnamed_generator_id(instance):
+    class_name = type(instance).__name__.lower()
+    return f"{class_name}_{next(_unnamed_generator_counter)}"
 
 def noema_generator(cls):
     class Wrapped(cls):
@@ -11,7 +20,10 @@ def noema_generator(cls):
                 self.id = self.var.replace("self.", "")
                 self._value = f"#{self.id.upper()}:"
                 return
-            self.id = varname()
+            try:
+                self.id = varname()
+            except ImproperUseError:
+                self.id = _unnamed_generator_id(self)
             self.id = self.id.replace("self.", "")
             if hasattr(self, 'value') and self.value is not None:
                 self.execute()
@@ -38,48 +50,13 @@ class Generator(BaseGenerator):
         self.options = options
         
     def execute(self):
-        llm = current_runtime().llm
-        noesis = ""
-        if self.hint != None:
-            noesis = self.value + f"({self.hint})" + "\n"
-        else:
-            noesis = self.value + "\n"
-        var = "" 
-        display_var = ""
-        if self.idx != None:
-            var = self.id.replace("self.", "").upper()+f"_{self.idx}"
-        else:
-            var = self.id.replace("self.", "").upper()
-        display_var = "#"+f"{var}:"
-        llm += noesis 
-        
-        runtime = current_runtime()
-        generation_kwargs = runtime.generation_kwargs(self.max_tokens)
-        if self.regex:
-            generation_kwargs["regex"] = self.regex
-        if self.stop_regex:
-            generation_kwargs["stop_regex"] = self.stop_regex
-        if self.stops:
-            generation_kwargs["stop"] = self.stops
-        if self.save_stop_text:
-            generation_kwargs["save_stop_text"] = "response_stop_text"
-        llm += runtime.reasoning_prelude()
-        llm += display_var + " " + gen(name="response", **generation_kwargs) + "\n"
-        res = llm["response"]
-        if self.save_stop_text:
-            stop_text = llm["response_stop_text"]
-            if stop_text in ".!?":
-                res += stop_text
-        runtime.llm = llm
-        self.noema = self.value
-        if self.return_type == bool:
-            self.value = True if res == "True" else False
-        else:
-            self.value = self.return_type(res)
-        self.noesis = noesis
-        runtime.append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if runtime.verbose:
-            print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")    
+        execute_generation(
+            self,
+            regex=self.regex,
+            stop_regex=self.stop_regex,
+            stops=self.stops,
+            save_stop_text=self.save_stop_text,
+        )
 
 
 

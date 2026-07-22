@@ -5,6 +5,8 @@ from .composed_types import ListOf
 from .information import Information
 from .substring import Substring
 from .text_gen import Sentence, Free, Paragraph
+from .json_gen import JsonObject
+from .generation import NoemaGenerationError
 from .programming_langugages import Python, Swift, Java, C, Cpp, CSharp, JavaScript, TypeScript, Ruby, PHP, Go, Rust, Kotlin, Dart, Scala, R, MATLAB, Julia, Lua, Perl, Shell, PowerShell, Bash, COBOL, Fortran, Assembly, Verilog, VHDL
 from .noesis_wrapper import Noema
 from .llm import LLM
@@ -14,8 +16,9 @@ from .semPy import SemPy
 __all__ = ['Generator', 'Select', 'SelectOrNone', 
            'Int', 'Float', 'Bool', 'Date', 
            'DateTime', 'Time', 'Phone', 'Email', 
-           'Word', 'ListOf', 'Information', 'Sentence', 
+           'Word', 'ListOf', 'Information', 'Sentence',
+           'JsonObject',
            'Free', 'Paragraph', 'Noema', 'LLM', 'Reset',
-           'SemPy', 'Substring',
+           'SemPy', 'Substring', 'NoemaGenerationError',
            'Python', 'Swift', 'Java', 'C', 'Cpp', 'CSharp',
            'JavaScript', 'TypeScript', 'Ruby', 'PHP', 'Go', 'Rust', 'Kotlin', 'Dart', 'Scala', 'R', 'MATLAB', 'Julia', 'Lua', 'Perl', 'Shell', 'PowerShell', 'Bash', 'COBOL', 'Fortran', 'Assembly', 'Verilog', 'VHDL']
