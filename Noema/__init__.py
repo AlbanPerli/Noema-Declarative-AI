@@ -13,7 +13,7 @@ from .semPy import SemPy
 from .automaton import Automaton
 from .selection_graph import SelectGraph
 from .environment import (
-    NoemaEnvironment, Memory, Visible, tool, visible,
+    NoemaEnvironment, Memory, Visible, Component, tool, visible,
     EnvironmentDecision, EnvironmentRun, EnvironmentObservation,
 )
 
@@ -23,7 +23,7 @@ __all__ = ['Generator', 'Select', 'SelectOrNone',
            'Word', 'ListOf', 'Information', 'Sentence', 
            'Free', 'Paragraph', 'Noema', 'LLM', 'Reset',
            'SemPy', 'Substring', 'Automaton', 'SelectGraph',
-           'NoemaEnvironment', 'Memory', 'Visible', 'tool', 'visible',
+           'NoemaEnvironment', 'Memory', 'Visible', 'Component', 'tool', 'visible',
            'EnvironmentDecision', 'EnvironmentRun', 'EnvironmentObservation',
            'Python', 'Swift', 'Java', 'C', 'Cpp', 'CSharp',
            'JavaScript', 'TypeScript', 'Ruby', 'PHP', 'Go', 'Rust', 'Kotlin', 'Dart', 'Scala', 'R', 'MATLAB', 'Julia', 'Lua', 'Perl', 'Shell', 'PowerShell', 'Bash', 'COBOL', 'Fortran', 'Assembly', 'Verilog', 'VHDL']

@@ -38,6 +38,12 @@ class ToolSpec:
     signature: str
     description: str
     parameters: tuple[str, ...]
+    component_name: str | None = None
+    local_name: str | None = None
+
+    @property
+    def is_component_tool(self):
+        return self.component_name is not None
 
 
 @dataclass
@@ -119,6 +125,49 @@ class Visible(Memory):
             visible=True,
             description=description,
         )
+
+
+class Component:
+    def __init__(self, component=None, *args, description=None, **kwargs):
+        self.component = component
+        self.args = args
+        self.kwargs = kwargs
+        self.description = description
+        self.name = None
+
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        values = instance.__dict__.setdefault("_noema_component_values", {})
+        if self.name not in values:
+            values[self.name] = self._initial_value(instance)
+        return values[self.name]
+
+    def __set__(self, instance, value):
+        self._validate_component(value)
+        values = instance.__dict__.setdefault("_noema_component_values", {})
+        values[self.name] = value
+
+    def _initial_value(self, owner):
+        if self.component is None:
+            raise AttributeError(f"Noema component {self.name!r} has not been assigned.")
+        if isinstance(self.component, type):
+            component = self.component(*self.args, **self.kwargs)
+        elif callable(self.component) and not isinstance(self.component, NoemaEnvironment):
+            component = _call_component_factory(self.component, owner)
+        else:
+            component = self.component
+        self._validate_component(component)
+        if getattr(component, "llm", None) is None and getattr(owner, "llm", None) is not None:
+            component.llm = owner.llm
+        return component
+
+    def _validate_component(self, component):
+        if not isinstance(component, NoemaEnvironment):
+            raise TypeError("Noema Component values must be NoemaEnvironment instances.")
 
 
 def tool(func=None, *, name=None, description=None):
@@ -213,10 +262,15 @@ class NoemaEnvironment:
         raise RuntimeError("NoemaEnvironment reached max_steps without a final answer.")
 
     def invoke(self, tool_name: str, **kwargs):
-        specs = self.tool_specs()
+        specs = self.available_tool_specs()
         if tool_name not in specs:
             raise ValueError(f"Unknown Noema environment tool: {tool_name!r}.")
         spec = specs[tool_name]
+        if spec.is_component_tool:
+            component = getattr(self, spec.component_name)
+            observation = component.invoke(spec.local_name, **kwargs)
+            return EnvironmentObservation(tool=tool_name, args=dict(kwargs), result=observation.result)
+
         method = getattr(self, spec.method_name)
         inspect.signature(method).bind(**kwargs)
         result = method(**kwargs)
@@ -236,6 +290,7 @@ class NoemaEnvironment:
                 }
                 for spec in self.tool_specs().values()
             ],
+            "components": self.component_specs(),
         }
 
     def visible_state(self):
@@ -271,6 +326,55 @@ class NoemaEnvironment:
             )
         return specs
 
+    def available_tool_specs(self):
+        specs = dict(self.tool_specs())
+        for component_name, component in self.components().items():
+            for local_name, child_spec in component.available_tool_specs().items():
+                tool_name = f"{component_name}.{local_name}"
+                if tool_name in specs:
+                    raise ValueError(f"Duplicate Noema environment tool name: {tool_name!r}.")
+                specs[tool_name] = ToolSpec(
+                    name=tool_name,
+                    method_name=child_spec.method_name,
+                    signature=f"{component_name}.{child_spec.signature}",
+                    description=child_spec.description,
+                    parameters=child_spec.parameters,
+                    component_name=component_name,
+                    local_name=local_name,
+                )
+        return specs
+
+    def components(self):
+        components = {}
+        for name in self._component_declarations():
+            try:
+                components[name] = getattr(self, name)
+            except AttributeError:
+                continue
+        return components
+
+    def component_specs(self):
+        specs = []
+        declarations = self._component_declarations()
+        for name, component in self.components().items():
+            declaration = declarations[name]
+            tools = []
+            for local_name, tool_spec in component.available_tool_specs().items():
+                tools.append({
+                    "name": f"{name}.{local_name}",
+                    "signature": f"{name}.{tool_spec.signature}",
+                    "description": tool_spec.description,
+                    "parameters": list(tool_spec.parameters),
+                })
+            specs.append({
+                "name": name,
+                "environment": type(component).__name__,
+                "description": declaration.description or inspect.getdoc(type(component)) or "",
+                "state": component.visible_state(),
+                "tools": tools,
+            })
+        return specs
+
     def describe(self):
         manifest = self.manifest()
         lines = [
@@ -286,11 +390,26 @@ class NoemaEnvironment:
         else:
             lines.append("- none")
 
+        lines.append("Components:")
+        if manifest["components"]:
+            for component in manifest["components"]:
+                description = f" - {component['description']}" if component["description"] else ""
+                lines.append(f"- {component['name']}: {component['environment']}{description}")
+                if component["state"]:
+                    for key, value in component["state"].items():
+                        lines.append(f"  state.{key}: {json.dumps(value, ensure_ascii=True)}")
+                for spec in component["tools"]:
+                    tool_description = f" - {spec['description']}" if spec["description"] else ""
+                    lines.append(f"  tool {spec['signature']}{tool_description}")
+        else:
+            lines.append("- none")
+
         lines.append("Available tools:")
-        if manifest["tools"]:
-            for spec in manifest["tools"]:
-                description = f" - {spec['description']}" if spec["description"] else ""
-                lines.append(f"- {spec['signature']}{description}")
+        available_tools = self.available_tool_specs()
+        if available_tools:
+            for spec in available_tools.values():
+                description = f" - {spec.description}" if spec.description else ""
+                lines.append(f"- {spec.signature}{description}")
         else:
             lines.append("- none")
         return "\n".join(lines)
@@ -303,7 +422,7 @@ class NoemaEnvironment:
     def _llm_decision(self, prompt, run, step_index, max_tokens):
         runtime = self._activate_runtime()
         self._noema_environment_verbose = bool(getattr(runtime, "verbose", False))
-        specs = self.tool_specs()
+        specs = self.available_tool_specs()
         action_options = ["final"] + [f"tool:{name}" for name in specs]
         action_name = f"noema_environment_action_{step_index}"
 
@@ -477,6 +596,15 @@ class NoemaEnvironment:
         return declarations
 
     @classmethod
+    def _component_declarations(cls):
+        declarations = {}
+        for klass in reversed(cls.__mro__):
+            for name, member in vars(klass).items():
+                if isinstance(member, Component):
+                    declarations[name] = member
+        return declarations
+
+    @classmethod
     def _tool_declarations(cls):
         declarations = {}
         for klass in reversed(cls.__mro__):
@@ -499,6 +627,16 @@ def _normalize_decision(decision):
         if "tool" in decision:
             return EnvironmentDecision.call(decision["tool"], decision.get("args"))
     raise TypeError("Planner must return an EnvironmentDecision, a final string, or a decision dict.")
+
+
+def _call_component_factory(factory, owner):
+    try:
+        parameters = inspect.signature(factory).parameters
+    except (TypeError, ValueError):
+        return factory()
+    if len(parameters) == 0:
+        return factory()
+    return factory(owner)
 
 
 def _call_planner(planner, environment, prompt, run):

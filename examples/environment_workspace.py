@@ -21,20 +21,17 @@ llm = LLM(
 )
 
 
-class CommentWorkspace(NoemaEnvironment):
+class CommentStore(NoemaEnvironment):
     comments = Memory(default_factory=list)
-    labels = Memory(default_factory=dict)
-    tone = Visible("concise and factual")
-
-    @visible
-    @property
-    def comment_count(self):
-        return len(self.comments)
 
     @tool
     def add_comment(self, comment: str):
         self.comments.append(comment)
         return {"count": len(self.comments)}
+
+
+class CommentLabeler(NoemaEnvironment):
+    labels = Memory(default_factory=dict)
 
     @tool
     def label_comment(self, comment: str, label: str):
@@ -44,6 +41,17 @@ class CommentWorkspace(NoemaEnvironment):
     @tool
     def known_labels(self):
         return sorted(set(self.labels.values()))
+
+
+class CommentWorkspace(NoemaEnvironment):
+    store = Component(CommentStore)
+    labeler = Component(CommentLabeler)
+    tone = Visible("concise and factual")
+
+    @visible
+    @property
+    def comment_count(self):
+        return len(self.store.comments)
 
 
 def main():

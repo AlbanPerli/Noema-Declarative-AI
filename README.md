@@ -402,25 +402,37 @@ from Noema import *
 llm = LLM("/models/gemma.gguf", reasoning="off")
 
 
-class CommentWorkspace(NoemaEnvironment):
+class CommentStore(NoemaEnvironment):
     comments = Memory(default_factory=list)
-    labels = Memory(default_factory=dict)
-    tone = Visible("concise and factual")
-
-    @visible
-    @property
-    def comment_count(self):
-        return len(self.comments)
 
     @tool
     def add_comment(self, comment: str):
         self.comments.append(comment)
         return {"count": len(self.comments)}
 
+
+class CommentLabeler(NoemaEnvironment):
+    labels = Memory(default_factory=dict)
+
     @tool
     def label_comment(self, comment: str, label: str):
         self.labels[comment] = label
         return self.labels
+
+    @tool
+    def known_labels(self):
+        return sorted(set(self.labels.values()))
+
+
+class CommentWorkspace(NoemaEnvironment):
+    store = Component(CommentStore)
+    labeler = Component(CommentLabeler)
+    tone = Visible("concise and factual")
+
+    @visible
+    @property
+    def comment_count(self):
+        return len(self.store.comments)
 
 
 workspace = CommentWorkspace(llm=llm)
@@ -431,8 +443,10 @@ This llm is very good!
 """, max_tokens=80)
 ```
 
-Only `Memory`, `Visible`, `@visible`, and `@tool` are projected into the LLM
-environment. Regular Python attributes and methods stay private.
+Only `Memory`, `Visible`, `Component`, `@visible`, and `@tool` are projected
+into the LLM environment. Regular Python attributes and methods stay private.
+Component tools are available with qualified names such as
+`store.add_comment` and `labeler.label_comment`.
 
 <details>
   <summary>LLM output:</summary>

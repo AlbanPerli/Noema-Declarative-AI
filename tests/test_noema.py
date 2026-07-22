@@ -23,6 +23,7 @@ if HAS_RUNTIME_DEPS:
         NoemaEnvironment,
         Memory,
         Visible,
+        Component,
         tool,
         visible,
         EnvironmentDecision,
@@ -52,6 +53,7 @@ class TestNoema(unittest.TestCase):
         self.assertIsNotNone(NoemaEnvironment)
         self.assertIsNotNone(Memory)
         self.assertIsNotNone(Visible)
+        self.assertIsNotNone(Component)
         self.assertIsNotNone(tool)
         self.assertIsNotNone(visible)
         self.assertIsNotNone(EnvironmentDecision)
@@ -364,6 +366,172 @@ class TestNoema(unittest.TestCase):
         self.assertNotIn("internal", manifest["state"])
         self.assertEqual(manifest["tools"][0]["name"], "add_comment")
         self.assertEqual(manifest["tools"][0]["signature"], "add_comment(comment: str)")
+
+    def test_environment_components_are_exposed_as_qualified_tools(self):
+        class CommentStore(NoemaEnvironment):
+            comments = Memory(default_factory=list)
+
+            @visible
+            @property
+            def count(self):
+                return len(self.comments)
+
+            @tool
+            def add(self, comment: str):
+                self.comments.append(comment)
+                return {"count": len(self.comments)}
+
+        class CommentSystem(NoemaEnvironment):
+            store = Component(CommentStore, description="Persistent comment store")
+
+        system = CommentSystem(llm="model.gguf")
+        manifest = system.manifest()
+        available_tools = system.available_tool_specs()
+
+        self.assertIs(system.store.llm, system.llm)
+        self.assertEqual(manifest["components"][0]["name"], "store")
+        self.assertEqual(manifest["components"][0]["environment"], "CommentStore")
+        self.assertEqual(manifest["components"][0]["description"], "Persistent comment store")
+        self.assertEqual(manifest["components"][0]["state"], {"count": 0, "comments": []})
+        self.assertEqual(manifest["components"][0]["tools"][0]["name"], "store.add")
+        self.assertEqual(manifest["components"][0]["tools"][0]["signature"], "store.add(comment: str)")
+        self.assertIn("store.add", available_tools)
+        self.assertEqual(available_tools["store.add"].signature, "store.add(comment: str)")
+
+    def test_environment_components_are_isolated_per_parent_instance(self):
+        class CommentStore(NoemaEnvironment):
+            comments = Memory(default_factory=list)
+
+            @tool
+            def add(self, comment: str):
+                self.comments.append(comment)
+                return list(self.comments)
+
+        class CommentSystem(NoemaEnvironment):
+            store = Component(CommentStore)
+
+        first = CommentSystem()
+        second = CommentSystem()
+
+        first.invoke("store.add", comment="alpha")
+
+        self.assertEqual(first.store.comments, ["alpha"])
+        self.assertEqual(second.store.comments, [])
+
+    def test_environment_components_can_be_injected_as_objects(self):
+        class CommentStore(NoemaEnvironment):
+            comments = Memory(default_factory=list)
+
+            @tool
+            def add(self, comment: str):
+                self.comments.append(comment)
+                return list(self.comments)
+
+        class CommentSystem(NoemaEnvironment):
+            store = Component()
+
+        store = CommentStore()
+        system = CommentSystem(store=store)
+
+        system.invoke("store.add", comment="injected")
+
+        self.assertIs(system.store, store)
+        self.assertEqual(store.comments, ["injected"])
+
+    def test_environment_component_factory_can_receive_parent(self):
+        class CommentStore(NoemaEnvironment):
+            owner_name = Visible()
+
+        class CommentSystem(NoemaEnvironment):
+            name = Visible("main")
+            store = Component(lambda parent: CommentStore(owner_name=parent.name))
+
+        system = CommentSystem()
+
+        self.assertEqual(system.store.owner_name, "main")
+
+    def test_environment_can_invoke_component_tools_from_llm_decisions(self):
+        class CommentStore(NoemaEnvironment):
+            comments = Memory(default_factory=list)
+
+            @tool
+            def add(self, comment: str):
+                self.comments.append(comment)
+                return {"stored": comment}
+
+        class CommentLabeler(NoemaEnvironment):
+            labels = Memory(default_factory=dict)
+
+            @tool
+            def label(self, comment: str, label: str):
+                self.labels[comment] = label
+                return self.labels
+
+        class CommentSystem(NoemaEnvironment):
+            store = Component(CommentStore)
+            labeler = Component(CommentLabeler)
+
+        system = CommentSystem()
+        decisions = iter([
+            {"tool": "store.add", "args": {"comment": "This llm is very good!"}},
+            {"tool": "labeler.label", "args": {"comment": "This llm is very good!", "label": "positive"}},
+            {"answer": "Stored and classified."},
+        ])
+
+        answer = system(
+            "Store and classify.",
+            planner=lambda environment, prompt, run: next(decisions),
+        )
+
+        self.assertEqual(answer, "Stored and classified.")
+        self.assertEqual(system.store.comments, ["This llm is very good!"])
+        self.assertEqual(system.labeler.labels, {"This llm is very good!": "positive"})
+        self.assertEqual([observation.tool for observation in system.last_run.observations], [
+            "store.add",
+            "labeler.label",
+        ])
+
+    def test_environment_llm_action_options_include_component_tools(self):
+        class CommentStore(NoemaEnvironment):
+            @tool
+            def add(self, comment: str):
+                return {"stored": comment}
+
+        class CommentSystem(NoemaEnvironment):
+            store = Component(CommentStore)
+
+        class FakeModel:
+            def __init__(self):
+                self.values = {
+                    "noema_environment_action_0": "final",
+                    "noema_environment_final_0": "Done.",
+                }
+
+            def __add__(self, value):
+                return self
+
+            def __getitem__(self, name):
+                return self.values[name]
+
+        class FakeRuntime:
+            def __init__(self):
+                self.llm = FakeModel()
+                self.verbose = False
+
+            def generation_kwargs(self, max_tokens=None):
+                return {"max_tokens": max_tokens}
+
+            def reasoning_prelude(self):
+                return ""
+
+        system = CommentSystem()
+
+        with patch.object(system, "_activate_runtime", return_value=FakeRuntime()):
+            with patch("Noema.environment.select", return_value="final") as mocked_select:
+                with patch("Noema.environment.gen", return_value="Done."):
+                    self.assertEqual(system("Finish."), "Done.")
+
+        self.assertIn("tool:store.add", mocked_select.call_args.args[0])
 
     def test_environment_call_runs_tool_loop_until_final_answer(self):
         class CommentWorkspace(NoemaEnvironment):
