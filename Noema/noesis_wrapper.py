@@ -5,6 +5,7 @@ import os
 import re
 import textwrap
 from .Subject import *
+from .llm import LLM
 from .information import *
 from .selectors import *
 from .text_gen import *
@@ -95,13 +96,18 @@ class NoesisBuilder:
 
         return noesis+ "\n[/INST]\n\n"
 
-def _decorate_noema(func, model_path=None, subject_kwargs=None):
-    subject_kwargs = subject_kwargs or {}
+def _activate_llm(llm):
+    if isinstance(llm, LLM):
+        return llm.activate()
 
+    return Subject.configure_shared(llm)
+
+
+def _decorate_noema(func, llm=None):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if model_path is not None:
-            Subject.configure_shared(model_path, **subject_kwargs)
+        if llm is not None:
+            _activate_llm(llm)
         
         def find_subclasses(base_class, namespace):
             subclasses = []
@@ -154,14 +160,23 @@ def Noema(func=None, **subject_kwargs):
     if callable(func) and model_path is None:
         return _decorate_noema(func)
 
-    if func is None or isinstance(func, (str, os.PathLike)):
+    if func is None or isinstance(func, (LLM, str, os.PathLike)):
         if func is not None:
-            model_path = func
+            llm = func
+        elif model_path is not None:
+            llm = LLM(model_path, **subject_kwargs)
+        elif not subject_kwargs:
+            llm = None
+        else:
+            raise TypeError("Noema model options require an LLM or model path.")
+
+        if not isinstance(llm, LLM) and subject_kwargs:
+            llm = LLM(llm, **subject_kwargs)
 
         def decorator(decorated_func):
-            return _decorate_noema(decorated_func, model_path, subject_kwargs)
+            return _decorate_noema(decorated_func, llm)
 
         return decorator
 
-    raise TypeError("Noema expects a function or a model path.")
+    raise TypeError("Noema expects a function, an LLM, or a model path.")
     

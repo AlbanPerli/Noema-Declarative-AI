@@ -17,6 +17,7 @@ if HAS_RUNTIME_DEPS:
         Int,
         ListOf,
         Noema,
+        LLM,
         Paragraph,
         Sentence,
         SemPy,
@@ -74,23 +75,65 @@ class TestNoema(unittest.TestCase):
 
         fake_subject = FakeSubject()
 
-        with patch("Noema.noesis_wrapper.Subject") as subject_cls:
-            subject_cls.configure_shared.return_value = fake_subject
-            subject_cls.shared.return_value = fake_subject
+        with patch("Noema.llm.Subject.configure_shared", return_value=fake_subject) as configure_shared:
+            with patch("Noema.noesis_wrapper.Subject.shared", return_value=fake_subject) as shared:
 
-            @Noema("model-a.gguf", context_size=2048)
-            def declared_model_task():
-                """Do the task with the declared model."""
-                return "ok"
+                @Noema("model-a.gguf", context_size=2048)
+                def declared_model_task():
+                    """Do the task with the declared model."""
+                    return "ok"
 
-            self.assertEqual(declared_model_task(), "ok")
-            subject_cls.configure_shared.assert_called_once_with(
+                self.assertEqual(declared_model_task(), "ok")
+            configure_shared.assert_called_once_with(
                 "model-a.gguf",
                 context_size=2048,
+                verbose=False,
+                write_graph=False,
+                n_gpu_layers=-1,
+                enable_monitoring=None,
+                suppress_startup_logs=None,
             )
-            subject_cls.shared.assert_called_once_with()
+            shared.assert_called_once_with()
             self.assertEqual(len(fake_subject.entered), 1)
             self.assertEqual(fake_subject.exited, ["ok"])
+
+    def test_decorator_can_declare_llm_object(self):
+        class FakeSubject:
+            def __init__(self):
+                self.llm = ""
+                self.entered = []
+                self.exited = []
+
+            def enter_function(self, *args):
+                self.entered.append(args)
+
+            def exit_function(self, value):
+                self.exited.append(value)
+
+        fake_subject = FakeSubject()
+        llm = LLM("model-b.gguf", context_size=1024, verbose=True)
+
+        with patch("Noema.llm.Subject.configure_shared", return_value=fake_subject) as configure_shared:
+            with patch("Noema.noesis_wrapper.Subject.shared", return_value=fake_subject):
+
+                @Noema(llm)
+                def declared_llm_task():
+                    """Do the task with the declared LLM."""
+                    return "ok"
+
+                self.assertEqual(declared_llm_task(), "ok")
+
+        configure_shared.assert_called_once_with(
+            "model-b.gguf",
+            context_size=1024,
+            verbose=True,
+            write_graph=False,
+            n_gpu_layers=-1,
+            enable_monitoring=None,
+            suppress_startup_logs=None,
+        )
+        self.assertEqual(len(fake_subject.entered), 1)
+        self.assertEqual(fake_subject.exited, ["ok"])
 
     def test_semantic_python_letter_count_fallback(self):
         sempy = SemPy("Count the occurrence of letters in a word")

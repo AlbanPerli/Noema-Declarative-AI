@@ -50,15 +50,21 @@ a fast process exit after successful completion to avoid late Metal finalizer
 crashes in `llama.cpp`; set `NOEMA_EXAMPLE_FAST_EXIT=0` to disable this while
 debugging shutdown behavior.
 
-## Declare the model on a Noema function
+## Declare LLMs
 
-On the experimental `noema-decorator-llm-path` branch, a function can declare
-which GGUF model it should use directly in the decorator:
+On the experimental `noema-decorator-llm-path` branch, define an LLM object and
+attach it to a Noema function:
 
 ```python
 from Noema import *
 
-@Noema("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf")
+llm = LLM(
+    "../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf",
+    context_size=4096,
+    n_gpu_layers=-1,
+)
+
+@Noema(llm)
 def think(task):
     """
     You are a simple thinker. You have a task to perform.
@@ -67,8 +73,8 @@ def think(task):
     return Sentence("Providing a concise answer.").value
 ```
 
-The previous `@Noema` usage still works when a shared `Subject` has already
-been created.
+`@Noema("path/to/model.gguf")` remains available as a shorthand while `Subject`
+is phased out.
 
 
 
