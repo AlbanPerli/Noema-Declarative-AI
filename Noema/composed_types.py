@@ -1,7 +1,7 @@
 import re
 from .BaseGenerator import BaseGenerator
 from .Generator import noema_generator
-from .Subject import Subject
+from .llm import current_runtime
 from guidance import gen
 
 @noema_generator
@@ -19,7 +19,7 @@ class ListOf(BaseGenerator):
         self.idx = idx
         
     def execute(self, max_items=None, item_max_tokens=48):
-        llm = Subject().shared().llm
+        llm = current_runtime().llm
         noesis = ""
         local_hint = ""
         if self.hint != None:
@@ -57,12 +57,12 @@ class ListOf(BaseGenerator):
                 break
             res.append(parsed[0])
 
-        Subject.shared().llm = llm
+        current_runtime().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
-        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if Subject().shared().verbose:
+        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if current_runtime().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({local_hint})'}\033[0m)")    
 
     @staticmethod

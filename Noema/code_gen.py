@@ -1,5 +1,5 @@
 from .Generator import Generator
-from .Subject import Subject
+from .llm import current_runtime
 from guidance import gen
 
 class CodeGenerator(Generator):
@@ -9,7 +9,7 @@ class CodeGenerator(Generator):
 
     def execute(self, max_tokens=500):
         print("Code Gen Value: ", self.value)
-        llm = Subject().shared().llm
+        llm = current_runtime().llm
         noesis = ""
         if self.hint != None:
             noesis = self.value + f"({self.hint})" + "\n"
@@ -20,9 +20,9 @@ class CodeGenerator(Generator):
         llm += " Produce only the code, no example or explanation." + "\n"  
         llm += display_var + " " + f" ```{self.__class__.__name__}\n" + gen(stop="```",name="response") + "\n"
         res = llm["response"]
-        Subject.shared().llm = llm
+        current_runtime().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
-        if Subject().shared().verbose:
+        if current_runtime().verbose:
             print(f"{self.id.replace('self.', '')} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")

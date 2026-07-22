@@ -1,6 +1,9 @@
 import _bootstrap
 from Noema import *
-from _config import create_subject, run_example
+from _config import create_llm
+
+
+llm = create_llm("Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf")
 
 # Create a way of thinking
 class SimpleWayOfThinking:
@@ -9,7 +12,7 @@ class SimpleWayOfThinking:
         super().__init__()
         self.task = task
         
-    @Noema
+    @Noema(llm)
     def think(self):
         """
         You are a simple thinker. You have a task to perform.
@@ -33,12 +36,10 @@ class SimpleWayOfThinking:
     
  
 def main():
-    # Create a subject (LLM)
-    create_subject("Mistral-NeMo-Minitron-8B-Instruct.Q4_K_M.gguf") # Llama cpp model
     swot = SimpleWayOfThinking("How to write a good iOS application?")
     conclusion = swot.think()
     print(conclusion)
-    print(Subject.shared().noema())
 
 
-run_example(main)
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,5 @@
 from .Generator import Generator
-from .Subject import Subject
+from .llm import current_runtime
 from guidance import select
 
 class Select(Generator):
@@ -7,7 +7,7 @@ class Select(Generator):
     hint = "Response format: select the best option"
     
     def execute(self):
-        llm = Subject().shared().llm
+        llm = current_runtime().llm
         noesis = ""
         if self.hint != None:
             noesis = self.value + f"({self.hint})" + "\n"
@@ -24,12 +24,12 @@ class Select(Generator):
         llm += noesis 
         llm += display_var + " " + select(self.options,name='response') + "\n"
         res = llm["response"]
-        Subject.shared().llm = llm
+        current_runtime().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
-        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if Subject().shared().verbose:
+        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if current_runtime().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {self.options})'}\033[0m)")
             
             
@@ -40,7 +40,7 @@ class SelectOrNone(Generator):
     def execute(self):
         if "None" not in self.options:
             self.options.append("None")
-        llm = Subject().shared().llm
+        llm = current_runtime().llm
         noesis = ""
         if self.hint != None:
             noesis = self.value + f"({self.hint})" + "\n"
@@ -57,14 +57,14 @@ class SelectOrNone(Generator):
         llm += noesis 
         llm += display_var + " " + select(self.options,name='response') + "\n"
         res = llm["response"]
-        Subject.shared().llm = llm
+        current_runtime().llm = llm
         self.noema = self.value
         if res == "None":
             self.value = None
         else:
             self.value = res
         self.noesis = noesis
-        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if Subject().shared().verbose:
+        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if current_runtime().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint} : {self.options})'}\033[0m)")
         

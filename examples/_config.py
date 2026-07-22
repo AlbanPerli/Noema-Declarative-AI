@@ -1,8 +1,7 @@
 import os
-import sys
 from pathlib import Path
 
-from Noema import Subject
+from Noema import LLM
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -40,24 +39,10 @@ def model_path(default_filename):
     return path
 
 
-def create_subject(default_filename, **kwargs):
+def create_llm(default_filename, **kwargs):
     verbose = _env_flag("NOEMA_VERBOSE", "1")
     kwargs.setdefault("context_size", int(os.environ.get("NOEMA_CONTEXT_SIZE", "4096")))
     kwargs.setdefault("n_gpu_layers", int(os.environ.get("NOEMA_N_GPU_LAYERS", "-1")))
     kwargs.setdefault("enable_monitoring", _env_flag("NOEMA_ENABLE_MONITORING", "0"))
     kwargs.setdefault("suppress_startup_logs", _env_flag("NOEMA_SUPPRESS_STARTUP_LOGS", "1"))
-    return Subject(str(model_path(default_filename)), verbose=verbose, **kwargs)
-
-
-def run_example(main):
-    try:
-        main()
-    except BaseException:
-        Subject.close_shared()
-        raise
-    else:
-        Subject.close_shared()
-        sys.stdout.flush()
-        sys.stderr.flush()
-        if _env_flag("NOEMA_EXAMPLE_FAST_EXIT", "1"):
-            os._exit(0)
+    return LLM(str(model_path(default_filename)), verbose=verbose, **kwargs)

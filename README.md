@@ -45,10 +45,8 @@ Noema API import correctly. It does not load a `.gguf` model.
 The launch configurations set `PYTHONPATH` to the workspace root, so examples
 import the local checkout without requiring a published package.
 
-Examples call `Subject.close_shared()` before exiting. By default they also set
-a fast process exit after successful completion to avoid late Metal finalizer
-crashes in `llama.cpp`; set `NOEMA_EXAMPLE_FAST_EXIT=0` to disable this while
-debugging shutdown behavior.
+Examples declare an `LLM` object and attach it to Noema functions, so they can
+be imported and called as regular Python functions.
 
 ## Declare LLMs
 
@@ -73,8 +71,7 @@ def think(task):
     return Sentence("Providing a concise answer.").value
 ```
 
-`@Noema("path/to/model.gguf")` remains available as a shorthand while `Subject`
-is phased out.
+`@Noema("path/to/model.gguf")` remains available as a shorthand.
 
 
 
@@ -82,10 +79,9 @@ is phased out.
 ```python
 from Noema import *
 
-# Create a subject (LLM)
-Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
+llm = LLM("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
 
-@Noema
+@Noema(llm)
 def think(task):
     """
     You are a simple thinker. You have a task to perform.
@@ -162,9 +158,9 @@ Always looking for the best way to perform it.
 - **Noesis**: can be seen as the description of a function
 - **Noema**: is the representation (step by step) of this description
 - **Constitution**: is the process of transformation Noesis->Noema.
-- **Subject**: the object producing the Noema via the constitution of the noesis. Here, the LLM.
+- **LLM**: the model producing the Noema via the constitution of the noesis.
 
-**Noema**/**Noesis**, **Subject**, and **Constitution** are a pedantic and naive application of concept borrowed from [Husserl's phenomenology](https://en.wikipedia.org/wiki/Edmund_Husserl).
+**Noema**/**Noesis** and **Constitution** are a pedantic and naive application of concept borrowed from [Husserl's phenomenology](https://en.wikipedia.org/wiki/Edmund_Husserl).
 
 
 ## ReAct prompting:
@@ -197,12 +193,12 @@ The content *generated* by the LLM corresponding to `Reflection` is the **Noema*
 
 ## Features
 
-### Create the Subject
+### Create the LLM
 
 ```python
 from Noema import *
 
-Subject("path/to/your/model.gguf", verbose=True) # Full Compatibiliy with LLamaCPP.
+llm = LLM("path/to/your/model.gguf", verbose=True)
 ```
 
 ### Create a way of thinking: 
@@ -211,9 +207,9 @@ Subject("path/to/your/model.gguf", verbose=True) # Full Compatibiliy with LLamaC
 ```python
 from Noema import *
 
-Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
+llm = LLM("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
 
-@Noema
+@Noema(llm)
 def comment_evaluation(comment):
   pass
 ```
@@ -221,7 +217,9 @@ def comment_evaluation(comment):
 ```python
 from Noema import *
 
-@Noema
+llm = LLM("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
+
+@Noema(llm)
 def comment_evaluation(comment):
   """
   You are a specialist of comment analysis.
@@ -232,7 +230,9 @@ def comment_evaluation(comment):
 ```python
 from Noema import *
 
-@Noema
+llm = LLM("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True)
+
+@Noema(llm)
 def comment_evaluation(comment):
   """
   You are a specialist of comment analysis.
@@ -247,8 +247,6 @@ def comment_evaluation(comment):
   
   synthesis = Paragraph("Providing a synthesis of the analysis.")
   return synthesis.value, analyse_by_specialists
-
-Subject("../Models/EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf", verbose=True) # Llama cpp model
 
 synthesis, abs = comment_evaluation("This llm is very good at following instructions!")
 
@@ -406,7 +404,9 @@ The SemPy type is creating Python function dynamically and execute it with your 
 ```python
 from Noema import *
 
-@Noema
+llm = LLM("../Models/EXAONE-3.5-7.8B-Instruct-Q4_K_M.gguf", verbose=True)
+
+@Noema(llm)
 def simple_task(task, parameters):
     """You are an incredible Python developer.
     Always looking for the best way to write code."""
@@ -432,7 +432,6 @@ def simple_task(task, parameters):
 
     return result.value 
     
-Subject("../Models/EXAONE-3.5-7.8B-Instruct-Q4_K_M.gguf",verbose=True)
 nb_letter = simple_task("Count the occurence of letters in a word", "strawberry")
 print(nb_letter)
 # {'s': 1, 't': 1, 'r': 3, 'a': 1, 'w': 1, 'b': 1, 'e': 1, 'y': 1}
@@ -440,16 +439,15 @@ print(nb_letter)
 
 ### Visualization
 
-Enabling reflection visualization with `write_graph = True` in the Subject init create a PlantUML and Mermaid diagram respectively in `diagram.puml` and `diagram.mmd`
+Enabling reflection visualization with `write_graph=True` in the `LLM` init creates a PlantUML and Mermaid diagram respectively in `diagram.puml` and `diagram.mmd`
 
 ```python
 from Noema import *
 
 
-# Create a new Subject
-Subject("../Models/granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", verbose=True, write_graph=True)
+llm = LLM("../Models/granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", verbose=True, write_graph=True)
 
-@Noema
+@Noema(llm)
 def analysis_evaluation(analysis):
     """
     You are a specialist of analysis evaluation.
@@ -461,7 +459,7 @@ def analysis_evaluation(analysis):
     evaluation = Float("Evaluation of the analysis, between 0 and 10")
     return evaluation.value
 
-@Noema
+@Noema(llm)
 def comment_note_evaluation(analysis):
     """
     You are a specialist of evaluation commenting.
@@ -471,7 +469,7 @@ def comment_note_evaluation(analysis):
     comment = Sentence("Commenting the analysis")
     return comment.value
 
-@Noema
+@Noema(llm)
 def comment_evaluation(comment):
   """
   You are a specialist of comment analysis.

@@ -1,8 +1,11 @@
 import _bootstrap
 from Noema import *
-from _config import create_subject, run_example
+from _config import create_llm
 
-@Noema
+llm = create_llm("EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf")
+
+
+@Noema(llm)
 def comment_evaluation(comment):
   """
   You are a specialist of comment analysis.
@@ -21,12 +24,10 @@ def comment_evaluation(comment):
   return synthesis.value, analyse_by_specialists
 
 def main():
-  # Create a new Subject
-  create_subject("EXAONE-3.5-2.4B-Instruct-Q4_K_M.gguf")
   synthesis, abs = comment_evaluation("This llm is very good!")
 
   print(synthesis)
-  print(Subject.shared().noema())
 
 
-run_example(main)
+if __name__ == "__main__":
+  main()

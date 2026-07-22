@@ -1,5 +1,5 @@
 from .Generator import Generator
-from .Subject import Subject
+from .llm import current_runtime
 from guidance import gen
 
 class Sentence(Generator):
@@ -20,7 +20,7 @@ class Free(Generator):
     return_type = str
     
     def execute(self, max_tokens=500):
-        llm = Subject().shared().llm
+        llm = current_runtime().llm
         noesis = ""
         if self.hint != None:
             noesis = self.value + f"({self.hint})" + "\n"
@@ -30,10 +30,10 @@ class Free(Generator):
         llm += noesis
         llm += display_var + " " + gen(name="response",max_tokens=max_tokens) + "\n"
         res = llm["response"]
-        Subject.shared().llm = llm
+        current_runtime().llm = llm
         self.noema = self.value
         self.value = res
         self.noesis = noesis
-        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if Subject().shared().verbose:
+        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if current_runtime().verbose:
             print(f"{self.id.replace('self.', '')} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")

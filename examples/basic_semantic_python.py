@@ -1,8 +1,11 @@
 import _bootstrap
 from Noema import *
-from _config import create_subject, run_example
+from _config import create_llm
 
-@Noema
+llm = create_llm("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf")
+
+
+@Noema(llm)
 def simple_task(task, parameters):
     """You are an incredible Python developer.
     Always looking for the best way to write code."""
@@ -13,9 +16,9 @@ def simple_task(task, parameters):
     return result.value
     
 def main():
-    create_subject("/Users/al/Documents/IA/Models/LLM/LFM2.5-8B-A1B-Q4_K_M.gguf")
     nb_letter = simple_task("Count the occurence of letters in a word", "strawberry")
     print(nb_letter)
 
 
-run_example(main)
+if __name__ == "__main__":
+    main()

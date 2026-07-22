@@ -21,9 +21,9 @@ if HAS_RUNTIME_DEPS:
         Paragraph,
         Sentence,
         SemPy,
-        Subject,
         Word,
     )
+    from Noema.llm import close_current_runtime, current_runtime
 
 
 @unittest.skipUnless(HAS_RUNTIME_DEPS, "guidance and varname are not installed")
@@ -36,9 +36,15 @@ class TestNoema(unittest.TestCase):
         self.assertIs(Sentence.return_type, str)
         self.assertIs(Paragraph.return_type, str)
 
-    def test_subject_requires_initial_model(self):
-        with self.assertRaisesRegex(Exception, "llm path"):
-            Subject.shared()
+    def tearDown(self):
+        try:
+            close_current_runtime()
+        except Exception:
+            pass
+
+    def test_runtime_requires_initial_llm(self):
+        with self.assertRaisesRegex(Exception, "declare an LLM"):
+            current_runtime()
 
     def test_generators_can_reference_existing_variables(self):
         reference = Sentence(var="existing_step")
@@ -61,7 +67,7 @@ class TestNoema(unittest.TestCase):
             wrapped()
 
     def test_decorator_can_declare_llm_path(self):
-        class FakeSubject:
+        class FakeRuntime:
             def __init__(self):
                 self.llm = ""
                 self.entered = []
@@ -73,17 +79,16 @@ class TestNoema(unittest.TestCase):
             def exit_function(self, value):
                 self.exited.append(value)
 
-        fake_subject = FakeSubject()
+        fake_runtime = FakeRuntime()
 
-        with patch("Noema.llm.Subject.configure_shared", return_value=fake_subject) as configure_shared:
-            with patch("Noema.noesis_wrapper.Subject.shared", return_value=fake_subject) as shared:
+        with patch("Noema.llm.Subject.configure_shared", return_value=fake_runtime) as configure_shared:
 
-                @Noema("model-a.gguf", context_size=2048)
-                def declared_model_task():
-                    """Do the task with the declared model."""
-                    return "ok"
+            @Noema("model-a.gguf", context_size=2048)
+            def declared_model_task():
+                """Do the task with the declared model."""
+                return "ok"
 
-                self.assertEqual(declared_model_task(), "ok")
+            self.assertEqual(declared_model_task(), "ok")
             configure_shared.assert_called_once_with(
                 "model-a.gguf",
                 context_size=2048,
@@ -93,12 +98,11 @@ class TestNoema(unittest.TestCase):
                 enable_monitoring=None,
                 suppress_startup_logs=None,
             )
-            shared.assert_called_once_with()
-            self.assertEqual(len(fake_subject.entered), 1)
-            self.assertEqual(fake_subject.exited, ["ok"])
+            self.assertEqual(len(fake_runtime.entered), 1)
+            self.assertEqual(fake_runtime.exited, ["ok"])
 
     def test_decorator_can_declare_llm_object(self):
-        class FakeSubject:
+        class FakeRuntime:
             def __init__(self):
                 self.llm = ""
                 self.entered = []
@@ -110,18 +114,17 @@ class TestNoema(unittest.TestCase):
             def exit_function(self, value):
                 self.exited.append(value)
 
-        fake_subject = FakeSubject()
+        fake_runtime = FakeRuntime()
         llm = LLM("model-b.gguf", context_size=1024, verbose=True)
 
-        with patch("Noema.llm.Subject.configure_shared", return_value=fake_subject) as configure_shared:
-            with patch("Noema.noesis_wrapper.Subject.shared", return_value=fake_subject):
+        with patch("Noema.llm.Subject.configure_shared", return_value=fake_runtime) as configure_shared:
 
-                @Noema(llm)
-                def declared_llm_task():
-                    """Do the task with the declared LLM."""
-                    return "ok"
+            @Noema(llm)
+            def declared_llm_task():
+                """Do the task with the declared LLM."""
+                return "ok"
 
-                self.assertEqual(declared_llm_task(), "ok")
+            self.assertEqual(declared_llm_task(), "ok")
 
         configure_shared.assert_called_once_with(
             "model-b.gguf",
@@ -132,8 +135,8 @@ class TestNoema(unittest.TestCase):
             enable_monitoring=None,
             suppress_startup_logs=None,
         )
-        self.assertEqual(len(fake_subject.entered), 1)
-        self.assertEqual(fake_subject.exited, ["ok"])
+        self.assertEqual(len(fake_runtime.entered), 1)
+        self.assertEqual(fake_runtime.exited, ["ok"])
 
     def test_semantic_python_letter_count_fallback(self):
         sempy = SemPy("Count the occurrence of letters in a word")

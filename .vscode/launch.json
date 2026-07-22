@@ -14,8 +14,7 @@
         "NOEMA_CONTEXT_SIZE": "4096",
         "NOEMA_N_GPU_LAYERS": "-1",
         "NOEMA_ENABLE_MONITORING": "0",
-        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
-        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1"
       },
       "console": "integratedTerminal",
       "justMyCode": true
@@ -33,8 +32,7 @@
         "NOEMA_CONTEXT_SIZE": "4096",
         "NOEMA_N_GPU_LAYERS": "-1",
         "NOEMA_ENABLE_MONITORING": "0",
-        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
-        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1"
       },
       "console": "integratedTerminal",
       "justMyCode": true
@@ -52,8 +50,7 @@
         "NOEMA_CONTEXT_SIZE": "4096",
         "NOEMA_N_GPU_LAYERS": "-1",
         "NOEMA_ENABLE_MONITORING": "0",
-        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
-        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1"
       },
       "console": "integratedTerminal",
       "justMyCode": true
@@ -71,8 +68,7 @@
         "NOEMA_CONTEXT_SIZE": "4096",
         "NOEMA_N_GPU_LAYERS": "-1",
         "NOEMA_ENABLE_MONITORING": "0",
-        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
-        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1"
       },
       "console": "integratedTerminal",
       "justMyCode": true
@@ -90,8 +86,7 @@
         "NOEMA_CONTEXT_SIZE": "4096",
         "NOEMA_N_GPU_LAYERS": "-1",
         "NOEMA_ENABLE_MONITORING": "0",
-        "NOEMA_SUPPRESS_STARTUP_LOGS": "1",
-        "NOEMA_EXAMPLE_FAST_EXIT": "1"
+        "NOEMA_SUPPRESS_STARTUP_LOGS": "1"
       },
       "console": "integratedTerminal",
       "justMyCode": true

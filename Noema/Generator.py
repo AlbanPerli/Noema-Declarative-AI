@@ -1,6 +1,6 @@
 from .BaseGenerator import BaseGenerator
 from guidance import gen, select, substring
-from .Subject import Subject
+from .llm import current_runtime
 from varname import varname
 
 def noema_generator(cls):
@@ -35,7 +35,7 @@ class Generator(BaseGenerator):
         self.options = options
         
     def execute(self):
-        llm = Subject().shared().llm
+        llm = current_runtime().llm
         noesis = ""
         if self.hint != None:
             noesis = self.value + f"({self.hint})" + "\n"
@@ -55,15 +55,15 @@ class Generator(BaseGenerator):
         else:
             llm += display_var + " " + gen(regex=self.regex, stop=self.stops, name="response") + "\n"
         res = llm["response"]
-        Subject.shared().llm = llm
+        current_runtime().llm = llm
         self.noema = self.value
         if self.return_type == bool:
             self.value = True if res == "True" else False
         else:
             self.value = self.return_type(res)
         self.noesis = noesis
-        Subject().shared().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
-        if Subject().shared().verbose:
+        current_runtime().append_to_chain({"value": self.value, "noema": self.noema, "noesis": self.noesis})
+        if current_runtime().verbose:
             print(f"{var} = \033[93m{res}\033[0m (\033[94m{self.noema + f'({self.hint})'}\033[0m)")    
 
 

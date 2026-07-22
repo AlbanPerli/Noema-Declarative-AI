@@ -4,6 +4,25 @@ from pathlib import Path
 from .Subject import Subject
 
 
+_current_runtime = None
+
+
+def current_runtime():
+    if _current_runtime is None:
+        raise Exception("You must declare an LLM with @Noema(llm) before generating values.")
+    return _current_runtime
+
+
+def close_current_runtime():
+    global _current_runtime
+    if _current_runtime is not None:
+        try:
+            if hasattr(_current_runtime, "close"):
+                _current_runtime.close()
+        finally:
+            _current_runtime = None
+
+
 @dataclass(frozen=True)
 class LLM:
     model_path: str | Path
@@ -16,7 +35,8 @@ class LLM:
     llama_cpp_kwargs: dict = field(default_factory=dict)
 
     def activate(self):
-        return Subject.configure_shared(
+        global _current_runtime
+        _current_runtime = Subject.configure_shared(
             self.model_path,
             context_size=self.context_size,
             verbose=self.verbose,
@@ -26,3 +46,4 @@ class LLM:
             suppress_startup_logs=self.suppress_startup_logs,
             **self.llama_cpp_kwargs,
         )
+        return _current_runtime

@@ -4,8 +4,7 @@ import ast
 import os
 import re
 import textwrap
-from .Subject import *
-from .llm import LLM
+from .llm import LLM, current_runtime
 from .information import *
 from .selectors import *
 from .text_gen import *
@@ -100,7 +99,7 @@ def _activate_llm(llm):
     if isinstance(llm, LLM):
         return llm.activate()
 
-    return Subject.configure_shared(llm)
+    return LLM(llm).activate()
 
 
 def _decorate_noema(func, llm=None):
@@ -138,7 +137,7 @@ def _decorate_noema(func, llm=None):
         finder = ClassInstanceFinder(classes_to_find)
         finder.visit(tree)
         noesis = NoesisBuilder(doc, finder.instances).build()
-        subject = Subject.shared()
+        subject = current_runtime()
         subject.llm += "\n"+noesis
         subject.enter_function(func_name, doc, noesis)
         result = None  # Initialisation de 'result'

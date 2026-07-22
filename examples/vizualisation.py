@@ -1,8 +1,11 @@
 import _bootstrap
 from Noema import *
-from _config import create_subject, run_example
+from _config import create_llm
 
-@Noema
+llm = create_llm("granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", write_graph=True)
+
+
+@Noema(llm)
 def analysis_evaluation(analysis):
     """
     You are a specialist of analysis evaluation.
@@ -14,7 +17,7 @@ def analysis_evaluation(analysis):
     evaluation = Float("Evaluation of the analysis, between 0 and 10")
     return evaluation.value
 
-@Noema
+@Noema(llm)
 def comment_note_evaluation(analysis):
     """
     You are a specialist of evaluation commenting.
@@ -24,7 +27,7 @@ def comment_note_evaluation(analysis):
     comment = Sentence("Commenting the analysis")
     return comment.value
 
-@Noema
+@Noema(llm)
 def comment_evaluation(comment):
   """
   You are a specialist of comment analysis.
@@ -46,10 +49,9 @@ def comment_evaluation(comment):
   return synthesis.value
 
 def main():
-    # Create a new Subject
-    create_subject("granite-3.1-3b-a800m-instruct-Q4_K_M.gguf", write_graph=True)
     synthesis = comment_evaluation("This llm is very good!")
     print(synthesis)
 
 
-run_example(main)
+if __name__ == "__main__":
+    main()
